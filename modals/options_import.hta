@@ -1,0 +1,89 @@
+<html>
+
+<head>
+    <title>Zustand laden</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style type="text/css">
+        #modal-container {
+            padding: 15px;
+            width: 100%;
+            height: 100%;
+        }
+
+        td {
+            font-size: 10pt;
+            vertical-align: baseline;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+
+        /* #namelist {} */
+
+        #namelist div {
+            cursor: pointer;
+            margin: 8px 0;
+        }
+
+        .namelist-item-hover {
+            color: #36df77;
+            font-weight: bold;
+        }
+    </style>
+
+
+    <script type="text/javascript">
+        window.onload = function () {
+            var arrStoredSateNames = window.dialogArguments;
+            if (!arrStoredSateNames || arrStoredSateNames.length === 0) { return; }
+
+            // arrStoredSateNames = [
+            //     'Bla bla bla 01.emopt',
+            // ]
+
+            var strHtmlNamelist = '';
+            for (var i = 0; i < arrStoredSateNames.length; i++) {
+                strHtmlNamelist += '<div class="namelist-item"'
+                    + ' onmouseover="window.event.srcElement.className = \'namelist-item-hover\'"'
+                    + ' onmouseout="window.event.srcElement.className = \'\'"'
+                    + ' onclick="handleSelect(' + i + ')"'
+                    + '>' + arrStoredSateNames[i] + '</div>';
+            }
+            document.getElementById('namelist').innerHTML = strHtmlNamelist;
+        }
+
+        function handleSelect(indexName) {
+            if (window.showModalDialog) {
+                window.returnValue = (indexName);
+            }
+            window.close();
+        }
+
+        function handleCancel() {
+            if (window.showModalDialog) {
+                window.returnValue = null;
+            }
+            window.close();
+        }
+    </script>
+</head>
+
+<body>
+    <div id="modal-container">
+        <table style="width: 100%; height: 100%;">
+            <tr style="height: 100%;">
+                <td>
+                    <div id="namelist"></div>
+                </td>
+            </tr>
+            <tr style="margin-top: 10px;">
+                <td colspan="3" style="text-align:right;">
+                    <button type="button" style="margin-left: 5px;" onclick="handleCancel()">Abbrechen</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+
+</html>

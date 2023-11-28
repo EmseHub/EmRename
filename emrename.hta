@@ -1,0 +1,1266 @@
+<html>
+
+<head>
+    <hta:application ApplicationName="EmRename" Id="EmRename" Version="1.0.6" Icon="img/emrename.ico" Border="Thick" BorderStyle="Normal" Caption="Yes" ContextMenu="Yes" MaximizeButton="Yes" MinimizeButton="Yes" Navigable="Yes" Scroll="Yes" Selection="Yes" ShowInTaskbar="Yes" SingleInstance="Yes"
+        SysMenu="Yes" WindowState="Normal">
+        <title>EmRename</title>
+        <link rel="stylesheet" href="css/style.css">
+        <script language="JavaScript">
+            window.onload = function () {
+                document.getElementById('span-version').innerText = EmRename.Version;
+
+                // --- Window-Settings ---
+                var arrObjDesktopMonitors = getArrObjDesktopMonitors();
+                var widthAvailable = screen.availWidth;
+                var heightAvailable = screen.availHeight;
+
+                var jsonStrSettings = readFromTextFile('settings.json');
+                var objSettings = (jsonStrSettings) ? JSON.parse(jsonStrSettings) : null;
+                if (objSettings) {
+                    if (
+                        widthAvailable !== objSettings.lastScreenWidthAvailable || heightAvailable !== objSettings.lastScreenHeightAvailable
+                        || objSettings.lastDesktopMonitors.length !== arrObjDesktopMonitors.length
+                    ) { objSettings = null; }
+                    else {
+                        for (var i = 0; i < objSettings.lastDesktopMonitors.length; i++) {
+                            var curMonitorSettings = objSettings.lastDesktopMonitors[i];
+                            var curMonitorLive = arrObjDesktopMonitors[i];
+                            if (curMonitorSettings.screenWidth !== curMonitorLive.screenWidth || curMonitorSettings.ScreenHeight !== curMonitorLive.ScreenHeight) {
+                                objSettings = null;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!objSettings) {
+                    objSettings = {
+                        lastScreenWidthAvailable: screen.availWidth,
+                        lastScreenHeightAvailable: screen.availHeight,
+                        lastWidth: 1300,
+                        lastHeight: 1020,
+                        lastLeft: 31,
+                        lastTop: 40,
+                        lastFolderpath: '',
+                        lastExplorerisExpanded: true
+                    };
+                }
+
+                var widthStartup = objSettings.lastWidth + 16;
+                var heightStartup = objSettings.lastHeight + 16;
+                if (!widthStartup || widthStartup < 1280 || widthStartup - 16 > widthAvailable) { widthStartup = 1300; }
+                if (!heightStartup || heightStartup < 750 || heightStartup - 16 > heightAvailable) { heightStartup = 1020; }
+                window.resizeTo(widthStartup, heightStartup);
+
+                // var posXStartup = (objSettings.lastLeft < -300 || objSettings.lastLeft > widthAvailable - 200) ? 0 : objSettings.lastLeft;
+                // var posYStartup = (objSettings.lastTop < 31 || objSettings.lastTop > heightAvailable - 100) ? 0 : objSettings.lastTop - 31;
+                var posXStartup = (arrObjDesktopMonitors.length === 1 && (objSettings.lastLeft < -300 || objSettings.lastLeft > widthAvailable - 200)) ? 0 : objSettings.lastLeft;
+                var posYStartup = (arrObjDesktopMonitors.length === 1 && (objSettings.lastTop < 31 || objSettings.lastTop > heightAvailable - 100)) ? 0 : objSettings.lastTop - 31;
+                // moveTo(-8 , 0) ist erst wirklich am Rand
+                window.moveTo(posXStartup - 8, posYStartup);
+
+
+                // --- Init Values ---
+                stateExplorer.isExpanded = objSettings.lastExplorerisExpanded;
+                document.getElementById('radio-mode-files').checked = true;
+
+                setStateOptionsToDefault();
+                loadOptionsToGUI();
+
+                var strStartFolderpath = objSettings.lastFolderpath;
+                if (window.clipboardData && window.clipboardData.getData) {
+                    var clipboardText = window.clipboardData.getData('Text');
+                    if (clipboardText && (clipboardText.indexOf('\\') !== -1)) {
+                        strStartFolderpath = clipboardText;
+                    }
+                }
+                if (!strStartFolderpath) {
+                    var shell = new ActiveXObject('WScript.Shell');
+                    var userfolder = shell.ExpandEnvironmentStrings('%USERPROFILE%\\Downloads')
+                    strStartFolderpath = userfolder;
+                }
+                document.getElementById('input-folderpath').value = strStartFolderpath;
+                document.getElementById('input-folderpath').focus();
+
+                if (!jsonStrSettings) {
+                    var strConfirmShortcuts = 'Möchtest Du Verknüpfungen zu EmRename auf dem Desktop und im Startmenü anlegen?\n\n'
+                        + 'Wenn sie stören, können sie jederzeit wieder entfernt werden.';
+                    if (confirm(cleanTextForPopup(strConfirmShortcuts)) === true) { createShortcuts(true, true); }
+                }
+            };
+
+            window.onbeforeunload = function (event) {
+                // window.event.returnValue = false;  
+                var arrObjDesktopMonitors = getArrObjDesktopMonitors();
+                var objSettings = {
+                    lastScreenWidthAvailable: screen.availWidth,
+                    lastScreenHeightAvailable: screen.availHeight,
+                    lastDesktopMonitors: arrObjDesktopMonitors,
+                    lastWidth: document.body.offsetWidth,
+                    lastHeight: document.body.offsetHeight + 23,
+                    lastLeft: window.screenLeft,
+                    lastTop: window.screenTop,
+                    // Am linken Rand ist Left 2 und Top 33 (Fensterrahmen)
+                    lastFolderpath: ((stateFolder) ? stateFolder.path : ''),
+                    lastExplorerisExpanded: stateExplorer.isExpanded
+                };
+                var jsonStrSettings = JSON.stringify(objSettings, null, 4);
+                writeToTextFile('settings.json', jsonStrSettings, false);
+            }
+        </script>
+        <script language="JavaScript" src="libs/json2.js"></script>
+        <script language="JavaScript" src="js/polyfills.js"></script>
+        <script language="JavaScript" src="js/shortcut.js"></script>
+        <script language="JavaScript" src="js/filesystem.js"></script>
+        <script language="JavaScript" src="js/naming.js"></script>
+</head>
+
+<body>
+    <table height=100%>
+        <tr>
+            <td colspan="2" style="vertical-align: top;">
+                <div style="margin-right: 4px;">
+                    <span id="span-heading" style="float: left;">
+                        <h1>EmRename</h1>
+                        <span style="font-size: 10pt; margin-left: 7px;">v<span id="span-version">0.0.0</span></span>
+                    </span>
+                    <div id="container-mode" style="float: right; margin-top: 5px;">
+                        <span style="font-size: 8pt; vertical-align: middle;">Umbenennungsmodus</span>
+                        <input type="radio" class="radio" id="radio-mode-files" name="mode" value="files" checked onclick="handleClickInputMode()">
+                        <label class="label-radio" for="radio-mode-files">Dateien</label>
+                        <input type="radio" class="radio" id="radio-mode-subfolders" name="mode" value="subfolders" onclick="handleClickInputMode()">
+                        <label class="label-radio" for="radio-mode-subfolders">Ordner</label>
+                    </div>
+                </div>
+                <div id="container-folderpath">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="width: 100%;">
+                                <input type="text" id="input-folderpath" onkeyup="handleKeyupInputFolderpath(event)">
+                            </td>
+                            <td>
+                                <button type="button" onclick="handleOpenFolder()">Ordner einlesen</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <hr>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div id="container-explorer"></div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <hr>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div id="container-options"></div>
+            </td>
+            <td style="vertical-align:bottom; text-align: right;">
+                <div id="container-optionbtns">
+                    <div>
+                        <button type="button" class="btn-symbol" onclick="handleOptionsExport()">&#128190;</button>
+                        <button type="button" class="btn-symbol" style="font-size: 10.4pt; margin-left: 6px;" onclick="handleOptionsImport()">&#128194;</button> <!-- &#128214; -> Open Book -->
+                    </div>
+                    <div><button type="button" onclick="handleResetOptionsFormular()">Zur&uuml;cksetzen</button></div>
+                </div>
+
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <hr>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div id="container-namefilter">
+                    <label for="input-namefilter">Nur Elemente umbenennen, die</label>
+                    <input type="text" id="input-namefilter" onkeyup="handleKeyupInputNamefilter()" onmouseup="handleKeyupInputNamefilter()">
+                    <label for="input-namefilter">enthalten (durch || k&ouml;nnen mehrere Suchwerte ODER-verkn&uuml;pft werden)</label>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <hr>
+            </td>
+        </tr>
+        <tr style="height: 100%; vertical-align: top;">
+            <td colspan="2">
+                <div id="container-elements"></div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div id="container-btns">
+                    <div style="float: left;">
+                        <button type="button" id="btn-undo" onclick="handleUndo()" disabled>Umbenennung r&uuml;ckg&auml;ngig machen</button>
+                        <button type="button" id="btn-textfile" onclick="handleLoadTextfile()" disabled>Namen aus Textdatei</button>
+                    </div>
+                    <div style="float: right;">
+                        <button type="button" onclick="handleRename()">Auswahl umbenennen</button>
+                        <button type="button" id="btn-explorer" onclick="handleOpenInExplorer()" disabled>Im Exporer &ouml;ffnen</button>
+                        <button type="button" style="margin-right: 0px;" onclick="handleClose()">Schlie&szlig;en</button>
+                    </div>
+                </div>
+                <!-- <table>
+                    <tr>
+                        <td style="text-align: left;">
+                            <button id="btn-undo" type="button" style="margin-right: 5px;" disabled onclick="handleUndo()">Umbenennung r&uuml;ckg&auml;ngig machen</button>
+                        </td>
+                        <td style="text-align: right;">
+                            <button type="button" style="margin-right: 5px;" onclick="handleRename()">Auswahl umbenennen</button>
+                            <button id="btn-explorer" type="button" style="margin-right: 5px;" onclick="handleOpenInExplorer()" disabled>Im Exporer &ouml;ffnen</button>
+                            <button type="button" onclick="handleClose()">Schlie&szlig;en</button>
+                        </td>
+                    </tr>
+                </table> -->
+            </td>
+        </tr>
+    </table>
+
+    <script language="JavaScript">
+        var timeoutInput;
+        var stateExplorer = {
+            path: '',
+            subfolders: [],
+            isExpanded: true
+        };
+        var stateOptions = {};
+        var stateNamefilter = '';
+        var stateFolder = {
+            path: '',
+            elementsTotal: null,
+            elementsListed: null,
+            mode: 'files'
+        };
+        var stateAllElementsAreSelected = false;
+        var stateFolderHistory = null;
+        var stateElementSorting = { sorter: null, order: null };
+
+        /* --------------------------Eventhandling-------------------------- */
+        function handleClickInputMode() {
+            var collectionRadiobuttons = document.getElementsByName('mode');
+            var newMode = 'files';
+            for (var i = 0; i < collectionRadiobuttons.length; i++) {
+                var curElem = collectionRadiobuttons[i];
+                if (curElem.checked && curElem.value !== stateFolder.mode) {
+                    stateFolder.mode = curElem.value;
+                    if (stateFolder.elementsTotal) { handleOpenFolder(); }
+                    return;
+                }
+            }
+        }
+
+        function handleOpenFolder() {
+            var strFolderpath = document.getElementById('input-folderpath').value;
+            if (!strFolderpath) {
+                // var input = document.createElement('input');
+                // input.type = 'file';         
+                // input.style.display = 'none';
+                // input.onchange = function () {
+                //     alert(input.value)
+                //     document.body.removeChild(input);
+                // };    
+                // document.body.appendChild(input);
+                // input.click();
+                var shell = new ActiveXObject('Shell.Application');
+                // https://learn.microsoft.com/de-de/windows/win32/api/shlobj_core/ns-shlobj_core-browseinfoa
+                // 0x00000200 --> Keine Schaltfläche Neuer Ordner im Dialogfeld
+                // 0x00000100 --> Verwendungshinweis anstelle des Bearbeitungsfelds
+                // 0x00000040 --> größeres Dialogfeld
+                // 0x00000001 --> Nur Dateisystemverzeichnisse. Wenn Ordner ausgewählt, der nicht Teil des Dateisystems ist, wird OK abgeblendet.
+                var shellFolder = shell.BrowseForFolder(0, 'Waehle unterhalb von "Dieser PC" den Ordner, dessen Dateien umbenannt werden sollen:', 0x00000200 + 0x00000100 + 0x00000040 + 0x00000001, 17);
+                if (shellFolder && shellFolder.Items().Item()) { strFolderpath = shellFolder.Items().Item().Path; }
+            }
+            else if (strFolderpath.indexOf('%') === 0) {
+                try {
+                    var shell = new ActiveXObject('WScript.Shell');
+                    strFolderpath = shell.ExpandEnvironmentStrings(strFolderpath);
+                } catch (error) { showAlert('Unerwarteter Fehler beim Einlesen eines Ordners:\n\n' + error.message); }
+            }
+            if (!strFolderpath) { return; }
+            loadFolderToGUI(strFolderpath);
+        }
+        function handleKeyupInputFolderpath(event) {
+            if (event.keyCode === 13) { handleOpenFolder(); }
+        }
+
+        function toggleExplorerCollapse() {
+            loadExplorerToGUI(stateExplorer.path, !stateExplorer.isExpanded, true);
+        }
+        function handleExplorerLoadFolder() {
+            loadFolderToGUI(stateExplorer.path);
+        }
+        function handleExplorerShowParent() {
+            var parentfolderPath = getParentfolderPath(stateExplorer.path);
+            loadExplorerToGUI(parentfolderPath, true, true);
+        }
+        function handleExplorerShowFolderByName(subfolderIndex) {
+            var subfolderName = stateExplorer.subfolders[subfolderIndex];
+            var folderpath = stateExplorer.path + '/' + subfolderName;
+            loadExplorerToGUI(folderpath, true, true);
+            loadFolderToGUI(folderpath);
+        }
+        function handleExplorerShowFolderBySplitIndex(splitIndex) {
+            var newPath = '';
+            var curPathSplitted = stateExplorer.path.split('/');
+            for (var i = 0; i <= splitIndex; i++) {
+                newPath += curPathSplitted[i];
+                if (i !== splitIndex) { newPath += '/'; }
+            }
+            loadExplorerToGUI(newPath, true, true);
+        }
+
+        function handlePreviewNames() {
+            clearTimeout(timeoutInput);
+            timeoutInput = setTimeout(function () {
+                setStateFolderElementsFromInput();
+                loadElementsToGUI(false);
+            }, 250);
+        }
+
+        function handleOptionsSort(rowIndex, direction) {
+            var idToFocus = '';
+            if (direction === -1 && rowIndex > 0) { // Datei wird um 1 nach vorne geschoben bzw. Index verringert        
+                stateOptions.order.splice((rowIndex - 1), 0, (stateOptions.order.splice((rowIndex), 1)[0]));
+                idToFocus = 'btn-optionssort-up-' + (rowIndex - 1);
+            }
+            else if (direction === 1 && rowIndex < (stateOptions.order.length - 1)) {
+                stateOptions.order.splice((rowIndex + 1), 0, (stateOptions.order.splice((rowIndex), 1)[0]));
+                idToFocus = 'btn-optionssort-down-' + (rowIndex + 1);
+            }
+            else { return; }
+            setStateFolderElementsFromInput();
+            loadOptionsToGUI();
+            loadElementsToGUI(false);
+            document.getElementById(idToFocus).focus();
+            // ---- Working wth Swap---- 
+            // var curOptionNode = sender.parentNode;
+            // if (direction === -1) {
+            //     var previousOptionNode = curOptionNode.previousSibling;
+            //     if (previousOptionNode) {
+            //         curOptionNode.parentNode.insertBefore(curOptionNode, previousOptionNode);
+            //     }
+            //     else { sender.disabled = true; }
+            // }
+
+            // if (direction === 1) {
+            //     var nextOptionNode = curOptionNode.nextSibling;
+            //     if (nextOptionNode) {
+            //         curOptionNode.parentNode.replaceChild(curOptionNode, nextOptionNode);
+            //         curOptionNode.parentNode.insertBefore(nextOptionNode, curOptionNode);
+            //     }
+            //     else { sender.disabled = true; }
+            // }
+            // sender.focus();
+            // handlePreviewNames();
+            // return;
+        }
+
+        function handleOptionsExport() {
+            if (window.showModalDialog) {
+                var strNewStoredStateName = showModalDialog('modals/options_export.hta', null, 'dialogWidth:500px; dialogHeight:150px;');
+                if (strNewStoredStateName && checkIfNameIsValid(strNewStoredStateName)) {
+                    setStateOptionsFromInput();
+                    var jsonStrStateOptions = JSON.stringify(stateOptions, null, 4);
+                    var strStoredStatePath = 'stored_states/' + strNewStoredStateName + '.emopt';
+                    if (checkIfFileExists(strStoredStatePath)) {
+                        var strConfirmUndo = 'Es besteht bereits ein Zustand mit diesem Namen. Überschreiben?';
+                        if (confirm(cleanTextForPopup(strConfirmUndo)) !== true) { return; }
+                    }
+                    writeToTextFile(strStoredStatePath, jsonStrStateOptions, false);
+                }
+                else if (strNewStoredStateName !== null && strNewStoredStateName !== undefined) {
+                    showAlert(
+                        'Es wurde kein gültiger Name angegeben.'
+                        + '\n\nHinweis: Datei- oder Ordnernamen dürfen folgende Zeichen nicht enthalten: '
+                        + '%5C%2C /%2C %3A%2C *%2C %3F%2C %22%2C %3C%2C %3E%2C %7C'
+                    );
+                }
+            }
+        }
+        function handleOptionsImport() {
+            if (window.showModalDialog) {
+                var arrObjFilesInFolder = getObjFilesInFolder('stored_states').elements;
+                if (!arrObjFilesInFolder) {
+                    showAlert('Fehler: Im Root-Verzeichnis der Anwendung wurde der Ordner "stored_states" nicht gefunden.');
+                    return;
+                }
+                var arrStoredSateNames = [];
+                for (var i = 0; i < arrObjFilesInFolder.length; i++) {
+                    var curFile = arrObjFilesInFolder[i];
+                    if (curFile.name.toLowerCase().endsWith('.emopt')) { arrStoredSateNames.push(curFile.name); }
+                }
+                if (arrStoredSateNames.length === 0) {
+                    showInfo('Es wurden keine gespeicherten Zustände gefunden.');
+                    return;
+                }
+                var indexSelectedStateName = showModalDialog('modals/options_import.hta', arrStoredSateNames, 'dialogWidth:550px; dialogHeight:500px;');
+                if (indexSelectedStateName === 0 || indexSelectedStateName > 0) {
+                    var jsonStrStateOptions = readFromTextFile('stored_states/' + arrStoredSateNames[indexSelectedStateName]);
+                    var objLoadedState = (jsonStrStateOptions) ? JSON.parse(jsonStrStateOptions) : null;
+                    if (!objLoadedState) { showAlert('Der Zustand konnte nicht eingelesen werden.'); return; }
+                    stateOptions = objLoadedState;
+                    loadOptionsToGUI();
+                    setStateFolderElementsFromInput();
+                    loadElementsToGUI(false);
+                }
+                else if (indexSelectedStateName !== null && indexSelectedStateName !== undefined) {
+                    showAlert('Es wurde keine gültige Datei ausgewählt.');
+                }
+            }
+        }
+
+        function handleResetOptionsFormular() {
+            setStateOptionsToDefault();
+            loadOptionsToGUI();
+
+            setStateFolderElementsFromInput();
+            loadElementsToGUI(false);
+        }
+
+        function handleKeyupInputNamefilter() {
+            clearTimeout(timeoutInput);
+            timeoutInput = setTimeout(function () {
+                if (!stateFolder.elementsTotal) { return; }
+                var strNamefilter = document.getElementById('input-namefilter').value.toLowerCase();
+                if (strNamefilter === stateNamefilter) { return; }
+                stateNamefilter = strNamefilter;
+                var showAllElements = (!strNamefilter || strNamefilter === '||');
+                var arrFilterSplitted = strNamefilter.split('||');
+                var newElementsListed = [];
+                for (var i = 0; i < stateFolder.elementsTotal.length; i++) {
+                    var curElement = stateFolder.elementsTotal[i];
+                    if (showAllElements) {
+                        curElement.isSelected = true;
+                        newElementsListed.push(curElement);
+                    }
+                    else {
+                        for (var y = 0; y < arrFilterSplitted.length; y++) {
+                            if (arrFilterSplitted[y] && curElement.name.toLowerCase().indexOf(arrFilterSplitted[y]) !== -1) {
+                                curElement.isSelected = true;
+                                newElementsListed.push(curElement);
+                                break;
+                            }
+                        }
+                    }
+                }
+                stateAllElementsAreSelected = true;
+                if (stateOptions.options.numbering.formularIsValid) {
+                    stateElementSorting.sorter = stateOptions.options.numbering.sortName;
+                    stateElementSorting.order = stateOptions.options.numbering.sortOrder;
+                }
+                else { sortElementArray(newElementsListed, stateElementSorting.sorter, stateElementSorting.order); }
+                stateFolder.elementsListed = getArrRenamedElements(newElementsListed, stateOptions.options, stateOptions.order, stateFolder.mode);
+                loadElementsToGUI(true);
+            }, 250);
+        }
+
+        function toggleElementIsSelected(elementIndex) {
+            var curElement = stateFolder.elementsListed[elementIndex];
+            curElement.isSelected = !curElement.isSelected;
+            setStateFolderElementsFromInput();
+            loadElementsToGUI(false);
+        }
+        function toggleAllElementsAreSelected() {
+            stateAllElementsAreSelected = !stateAllElementsAreSelected;
+            for (var i = 0; i < stateFolder.elementsListed.length; i++) { stateFolder.elementsListed[i].isSelected = stateAllElementsAreSelected; }
+            setStateFolderElementsFromInput();
+            loadElementsToGUI(false);
+        }
+
+        function handleThElementSort(sorter) {
+            stateElementSorting.order = (stateElementSorting.sorter === sorter) ? (stateElementSorting.order * -1) : 1;
+            stateElementSorting.sorter = sorter;
+            sortElementArray(stateFolder.elementsListed, sorter, stateElementSorting.order);
+            loadElementsToGUI(false);
+        }
+
+        function handleCustomElementSort(elementIndex, direction) {
+            var idToFocus = '';
+            if (direction === -1 && elementIndex > 0) { // Datei wird um 1 nach vorne geschoben bzw. Index verringert        
+                stateFolder.elementsListed.splice((elementIndex - 1), 0, (stateFolder.elementsListed.splice((elementIndex), 1)[0]));
+                // splice(indexStartInsertionOrDeletion, deleteCountStartingFromIndexStart, itemToAdd_1, ..., itemToAdd_X)
+                idToFocus = 'btn-customsort-up-' + (elementIndex - 1);
+            }
+            else if (direction === 1 && elementIndex < (stateFolder.elementsListed.length - 1)) {
+                stateFolder.elementsListed.splice((elementIndex + 1), 0, (stateFolder.elementsListed.splice((elementIndex), 1)[0]));
+                idToFocus = 'btn-customsort-down-' + (elementIndex + 1);
+            }
+            else { return; }
+            setStateFolderElementsFromInput();
+            loadElementsToGUI(false);
+            document.getElementById(idToFocus).focus();
+            document.getElementById(idToFocus).parentNode.parentNode.style.backgroundColor = 'black';
+        }
+
+        function handleUndo() {
+            if (
+                stateFolderHistory !== null
+                && getCleanPath(stateFolderHistory.path).toLowerCase() === getCleanPath(stateFolder.path).toLowerCase()
+                && stateFolderHistory.mode === stateFolder.mode
+                && stateFolderHistory.elements.length === 0
+            ) {
+                showAlert('Rückgängigmachen ist wegen eines unbekannten Fehlers leider nicht möglich!');
+                return;
+            }
+            var strConfirmUndo = 'Soll der Umbenennungsvorgang vom ' + getDateStringGerman(stateFolderHistory.date)
+                + ' zum Rückgängigmachen in die aktuelle Ansicht geladen werden?\n\n'
+                + 'Achtung: Sobald Optionen gesetzt werden, wird der neue Name wieder angepasst. Der alte Stand kann jedoch erneut eingelesen werden.';
+            if (confirm(cleanTextForPopup(strConfirmUndo)) === true) {
+                // setStateOptionsToDefault();
+                // loadOptionsToGUI();
+                var newElementsListed = [];
+                for (var i = 0; i < stateFolder.elementsTotal.length; i++) {
+                    var curElement = stateFolder.elementsTotal[i];
+                    curElement.name_new = '';
+                    curElement.isSelected = false;
+                    for (var y = 0; y < stateFolderHistory.elements.length; y++) {
+                        curElementHistory = stateFolderHistory.elements[y];
+                        if (curElement.name === curElementHistory.name_new) {
+                            curElement.name_new = curElementHistory.name_old;
+                            curElement.isSelected = true;
+                            break;
+                        }
+                    }
+                    newElementsListed.push(curElement);
+                }
+                sortElementArray(newElementsListed, stateElementSorting.sorter, stateElementSorting.order);
+                stateFolder.elementsListed = newElementsListed;
+                loadElementsToGUI(false);
+            }
+        }
+
+        function handleLoadTextfile() {
+            if (!(stateFolder.mode === 'files' || stateFolder.mode === 'subfolders')) { return; }
+            var strConfirmTextfile = ''
+                + 'Sortiere die Elemente, indem Du auf einen Spaltennamen klickst oder eine Sortierung über die Nummerierungsoption vornimmst.\n\n'
+                + 'Sofern die Textdatei mindestens so viele Zeilen hat, wie Elemente ausgewählt sind, werden die eingelesenen Namen in der gleichen Reihenfolge zugeordnet.\n\n'
+                + 'Achtung: Sobald Du die Auswahl oder Optionen veränderst, gehen die neuen Namen verloren. Stelle also vorher alles korrekt ein.\n\n'
+                + 'Datei jetzt öffnen?';
+            if (confirm(cleanTextForPopup(strConfirmTextfile)) === true) {
+                var selectedElementsCount = 0;
+                for (var i = 0; i < stateFolder.elementsListed.length; i++) {
+                    if (stateFolder.elementsListed[i].isSelected === true) { selectedElementsCount++; }
+                }
+                if (selectedElementsCount === 0) { showAlert('Es wurden keine Elemente zur Umbenennung ausgewählt.'); return; }
+
+                openFileBrowserDialog(function (cbFilepath) {
+
+                    var arrValidFileExtensions = ['.txt', '.csv', '.xml'];
+                    var isValidTextfile = false;
+                    for (var i = 0; i < arrValidFileExtensions.length; i++) {
+                        if (cbFilepath.toLowerCase().endsWith(arrValidFileExtensions[i].toLowerCase())) { isValidTextfile = true; break; }
+                    }
+                    if (!isValidTextfile) { showAlert('Es muss eine Textdatei ausgewählt werden.\n(' + arrValidFileExtensions + ')'); return; }
+
+                    var strText = readFromTextFile(cbFilepath);
+                    var arrTextSplitted = strText.split(/\r?\n/);
+
+                    if (arrTextSplitted.length < selectedElementsCount) { showAlert('Die Textdatei hat weniger Zeilen als Elemente ausgewählt wurden.'); return; }
+
+                    stateOptions.options.numbering.sorter = 'custom';
+                    loadOptionsToGUI();
+
+                    var curLineIndex = 0;
+                    for (var i = 0; i < stateFolder.elementsListed.length; i++) {
+                        curElement = stateFolder.elementsListed[i];
+                        if (curElement.isSelected !== true) { curElement.name_new = ''; continue; }
+                        var curLineContent = arrTextSplitted[curLineIndex++];
+                        if (stateFolder.mode === 'files') {
+                            var curNameExtension = getFileExtension(curElement.name);
+                            var newNameExtension = getFileExtension(curLineContent);
+                            // if (stateOptions.options.keepextension.value && curNameExtension && !newNameExtension) { curLineContent += curNameExtension; }
+                            if (stateOptions.options.keepextension.value && curNameExtension) { curLineContent += curNameExtension; }
+                        }
+                        curElement.name_new = curLineContent;
+
+                    }
+                    loadElementsToGUI(false);
+                });
+            }
+        }
+
+        function handleRename() {
+            loadElementsToGUI(false);
+            var arrProcessedElements = renameSelectedElements(stateFolder.elementsListed, stateFolder.path, stateFolder.mode);
+            if (!arrProcessedElements || arrProcessedElements.length === 0) { return; }
+            updateLogFile(arrProcessedElements, stateFolder.path, stateFolder.mode);
+            setStateFolderHistory(arrProcessedElements, stateFolder.path, stateFolder.mode);
+            loadFolderToGUI(stateFolder.path);
+            for (var i = 0; i < stateFolder.elementsListed.length; i++) {
+                var curElement = stateFolder.elementsListed[i];
+                curElement.isSelected = false;
+                curElement.name_new = '';
+                for (var y = 0; y < arrProcessedElements.length; y++) {
+                    if (arrProcessedElements[y].name_new === curElement.name) {
+                        curElement.isSelected = true;
+                        break;
+                    }
+                }
+            }
+            loadElementsToGUI(false);
+        }
+
+        function handleOpenInExplorer() {
+            openWindowsExplorer(stateFolder.path);
+        }
+
+        function handleClose() {
+            window.close();
+        }
+
+
+        /* --------------------------General-------------------------- */
+        function loadFolderToGUI(strFolderpath) {
+            setStateFolderFromFolderpath(strFolderpath);
+            var elemBtnExplorer = document.getElementById('btn-explorer');
+            var elemBtnTextfile = document.getElementById('btn-textfile');
+            var elemBtnUndo = document.getElementById('btn-undo');
+            var elemTableContainer = document.getElementById('container-elements');
+            var elemSpanHeading = document.getElementById('span-heading');
+
+            if (stateFolder.path === null) {
+                elemBtnExplorer.disabled = true;
+                elemBtnTextfile.disabled = true;
+                elemBtnUndo.disabled = true;
+                elemTableContainer.innerHTML = '<p class="txt-error">Ordner nicht gefunden!</p>';
+                elemSpanHeading.innerHTML = '<h1>Ordner nicht gefunden</h1>';
+                return;
+            }
+
+            elemBtnExplorer.disabled = false;
+            elemBtnTextfile.disabled = (stateFolder.elementsListed.length === 0);
+            elemBtnUndo.disabled = (
+                stateFolderHistory === null
+                || stateFolderHistory.path.toLowerCase() !== stateFolder.path.toLowerCase()
+                || stateFolderHistory.mode !== stateFolder.mode
+                || stateFolderHistory.elements.length === 0
+                || stateFolder.elementsTotal.length === 0
+            );
+            elemSpanHeading.innerHTML = '<h1>' + stateFolder.path.split('/').pop() + '</h1>';
+            document.getElementById('input-folderpath').value = stateFolder.path;
+
+            loadExplorerToGUI(stateFolder.path, stateExplorer.isExpanded, true);
+
+            stateElementSorting.sorter = 'namePlus';
+            stateElementSorting.order = 1;
+            sortElementArray(stateFolder.elementsListed, stateElementSorting.sorter, stateElementSorting.order);
+
+            setStateFolderElementsFromInput();
+            loadElementsToGUI(true);
+        }
+
+        function loadExplorerToGUI(strFolderpath, isExpanded, scrollToTop) {
+            setStateExplorer(strFolderpath, isExpanded);
+            var elemExplorerContainer = document.getElementById('container-explorer');
+            elemExplorerContainer.innerHTML = getHtmlExplorer();
+            if (scrollToTop) { elemExplorerContainer.scrollTop = 0; }
+        }
+
+        function loadOptionsToGUI() {
+            document.getElementById('container-options').innerHTML = getHtmlOptions();
+            // --- Inputs Event-Handler zuordnen ---
+            var divOptions = document.getElementById('container-options');
+            var arrInputNodes = divOptions.getElementsByTagName('input');
+            for (var i = 0; i < arrInputNodes.length; i++) {
+                var curNode = arrInputNodes[i];
+                curNode.onchange = function (event) { handlePreviewNames(); }
+                curNode.onkeyup = function (event) { handlePreviewNames(); }
+                if (curNode.type === 'checkbox') { curNode.onclick = function () { handlePreviewNames(); }; }
+            }
+            var arrSelectNodes = divOptions.getElementsByTagName('select');
+            for (var i = 0; i < arrSelectNodes.length; i++) {
+                arrSelectNodes[i].onchange = function () { handlePreviewNames(); }
+            }
+            document.getElementById('checkbox-keepextension').onclick = function () {
+                if (this.checked !== true) { alert('Achtung: Durch das Manipulieren der Dateierweiterung kann eine Datei unbrauchbar werden.') }
+                handlePreviewNames();
+            };
+        }
+
+        function loadElementsToGUI(scrollToTop) {
+            var elemElementsContainer = document.getElementById('container-elements');
+            elemElementsContainer.innerHTML = getHtmlElements();
+            if (scrollToTop) { elemElementsContainer.scrollTop = 0; }
+        }
+
+        function setStateExplorer(strFolderpath, isExpanded) {
+            if (!strFolderpath) { return; }
+            var arrObjSubfolders = getObjSubfoldersInFolder(strFolderpath + '/').elements;
+            if (!arrObjSubfolders) { return; }
+            var arrSubfolderNames = [];
+            for (var i = 0; i < arrObjSubfolders.length; i++) {
+                var curSubfolder = arrObjSubfolders[i];
+                if (curSubfolder.attributes === 16 || curSubfolder.attributes === 17) {
+                    arrSubfolderNames.push(curSubfolder.name);
+                }
+            }
+            stateExplorer.path = strFolderpath;
+            stateExplorer.subfolders = arrSubfolderNames;
+            stateExplorer.isExpanded = isExpanded;
+        }
+
+        function setStateOptionsToDefault() {
+            var objOptions = {
+                replace: { searchtxt: '', replacetxt: '', firstonly: true, allowregex: false },
+                sliceafter: { value: '' },
+                slicebefore: { value: '' },
+                casing: { target: '', type: '' },
+                firstnumberdigits: { value: '' },
+                prefixandsuffix: { prefix: '', suffix: '' },
+                date: { type: '', format: '', formatdelimiter: '', position: '', delimiter: '' },
+                foldername: { stop: '', position: '', delimiter: '' },
+                numbering: { start: '', sorter: '', position: '', delimiter: '', selectiononly: true, startInt: '', sortName: '', sortOrder: '', formularIsValid: false },
+                keepextension: { value: true }
+            };
+            var arrOrder = ['replace', 'sliceafter', 'slicebefore', 'casing', 'firstnumberdigits', 'prefixandsuffix', 'date', 'foldername', 'numbering'];
+            stateOptions = { options: objOptions, order: arrOrder };
+            // var divOptions = document.getElementById('container-options');
+            // var arrInputNodes = divOptions.getElementsByTagName('input');
+            // for (var i = 0; i < arrInputNodes.length; i++) { if (arrInputNodes[i].type === 'text') { arrInputNodes[i].value = ''; } }
+            // var arrSelectNodes = divOptions.getElementsByTagName('select');
+            // for (var i = 0; i < arrSelectNodes.length; i++) { arrSelectNodes[i].value = ''; }
+            // document.getElementById('checkbox-replace-firstonly').checked = true;
+            // document.getElementById('checkbox-replace-allowregex').checked = false;
+            // document.getElementById('checkbox-numbering-selectiononly').checked = true;
+            // document.getElementById('checkbox-keepextension').checked = true;
+        }
+
+        function setStateOptionsFromInput() {
+            var objOptions = {
+                replace: {
+                    searchtxt: document.getElementById('input-replace-searchtxt').value,
+                    replacetxt: document.getElementById('input-replace-replacetxt').value,
+                    firstonly: (document.getElementById('checkbox-replace-firstonly').checked === true),
+                    allowregex: (document.getElementById('checkbox-replace-allowregex').checked === true)
+                },
+                sliceafter: {
+                    value: parseInt(document.getElementById('input-sliceafter').value)
+                },
+                slicebefore: {
+                    value: parseInt(document.getElementById('input-slicebefore').value)
+                },
+                casing: {
+                    target: document.getElementById('select-casing-target').value,
+                    type: document.getElementById('select-casing-type').value
+                },
+                firstnumberdigits: {
+                    value: parseInt(document.getElementById('input-firstnumberdigits').value)
+                },
+                prefixandsuffix: {
+                    prefix: document.getElementById('input-prefix').value,
+                    suffix: document.getElementById('input-suffix').value
+                },
+                date: {
+                    type: document.getElementById('select-date-type').value,
+                    format: document.getElementById('select-date-format').value,
+                    formatdelimiter: document.getElementById('input-date-formatdelimiter').value,
+                    position: document.getElementById('select-date-position').value,
+                    delimiter: document.getElementById('input-date-delimiter').value
+                },
+                foldername: {
+                    stop: document.getElementById('input-foldername-stop').value,
+                    position: document.getElementById('select-foldername-position').value,
+                    delimiter: document.getElementById('input-foldername-delimiter').value
+                },
+                numbering: {
+                    start: document.getElementById('input-numbering-start').value,
+                    sorter: document.getElementById('select-numbering-sorter').value,
+                    position: document.getElementById('select-numbering-position').value,
+                    delimiter: document.getElementById('input-numbering-delimiter').value,
+                    selectiononly: (document.getElementById('checkbox-numbering-selectiononly').checked === true)
+                },
+                keepextension: {
+                    value: (document.getElementById('checkbox-keepextension').checked === true)
+                }
+            };
+            objOptions.numbering.startInt = parseInt(objOptions.numbering.start);
+            objOptions.numbering.sortName = objOptions.numbering.sorter.split('_')[0];
+            objOptions.numbering.sortOrder = (objOptions.numbering.sorter.split('_')[1] === 'desc') ? -1 : 1;
+            objOptions.numbering.formularIsValid = (!isNaN(objOptions.numbering.startInt) && objOptions.numbering.sorter && objOptions.numbering.position);
+
+            stateOptions.options = objOptions;
+        }
+
+        function setStateFolderFromFolderpath(folderPath) {
+            if (!(stateFolder.mode === 'files' || stateFolder.mode === 'subfolders')) { return; }
+            var objElementsInFolder = null;
+            if (stateFolder.mode === 'files') { objElementsInFolder = getObjFilesInFolder(folderPath); }
+            if (stateFolder.mode === 'subfolders') { objElementsInFolder = getObjSubfoldersInFolder(folderPath); }
+            if (!objElementsInFolder) { return; }
+            stateFolder.path = objElementsInFolder.path;
+            stateFolder.elementsListed = null;
+            if (objElementsInFolder.elements === null) { return; }
+
+            stateFolder.elementsListed = [];
+            stateFolder.elementsTotal = [];
+            var arrIgnoredElements = [];
+            for (var i = 0; i < objElementsInFolder.elements.length; i++) {
+                var curElement = objElementsInFolder.elements[i];
+                if (
+                    (stateFolder.mode === 'files' && (curElement.attributes === 0 || curElement.attributes === 32 || curElement.attributes === 33))
+                    || (stateFolder.mode === 'subfolders' && (curElement.attributes === 16 || curElement.attributes === 17))
+                ) {
+                    curElement.name_new = curElement.name;
+                    curElement.isSelected = true;
+                    stateFolder.elementsListed.push(curElement);
+                    stateFolder.elementsTotal.push(curElement);
+                }
+                else { arrIgnoredElements.push(curElement); }
+            }
+
+            if (arrIgnoredElements.length > 0) {
+                var strInfoIgnoredNames = 'Folgende Elemente im Ordner werden bewusst ignoriert:\n\n';
+                for (var i = 0; i < arrIgnoredElements.length; i++) {
+                    var curIgnoredElem = arrIgnoredElements[i];
+                    if (i > 0) { strInfoIgnoredNames += '\n\n'; }
+                    strInfoIgnoredNames += curIgnoredElem.name
+                        + '\n(Attribute ' + curIgnoredElem.attributes + ': ' + getAttributesAsString(curIgnoredElem.attributes) + ')';
+                }
+                showInfo(strInfoIgnoredNames);
+            }
+
+            stateAllElementsAreSelected = true;
+        }
+
+        function setStateFolderHistory(arrProcessedElements, folderPath, mode) {
+            if (!arrProcessedElements || arrProcessedElements.length === 0) { return; }
+            var arrNamepairs = [];
+            for (var i = 0; i < arrProcessedElements.length; i++) {
+                var curProcessedElement = arrProcessedElements[i];
+                if (curProcessedElement.isSuccessful) {
+                    arrNamepairs.push({
+                        name_old: curProcessedElement.name_old,
+                        name_new: curProcessedElement.name_new
+                    });
+                }
+            }
+            stateFolderHistory = {
+                date: (new Date()),
+                path: folderPath,
+                elements: arrNamepairs,
+                mode: mode
+            };
+        }
+
+        function setStateFolderElementsFromInput() {
+            setStateOptionsFromInput();
+            if (stateOptions.options.numbering.formularIsValid) {
+                stateElementSorting.sorter = stateOptions.options.numbering.sortName;
+                stateElementSorting.order = stateOptions.options.numbering.sortOrder;
+            }
+            stateFolder.elementsListed = getArrRenamedElements(stateFolder.elementsListed, stateOptions.options, stateOptions.order, stateFolder.mode);
+        }
+
+        function getHtmlExplorer() {
+            if (!stateExplorer || !stateExplorer.path) { return ''; }
+            if (!stateExplorer.isExpanded) {
+                return ''
+                    + '<div id="container-explorer-collapsed">'
+                    + '  <span style="float:right;">'
+                    + '    <span class="explorer-path-btn" onclick="toggleExplorerCollapse()">&#9660;</span>'
+                    + '  </span>'
+                    + '</div>';
+            }
+            var strHtmlExplorerPath = '';
+            var explorerPathSplitted = stateExplorer.path.split('/');
+            for (var i = 0; i < explorerPathSplitted.length; i++) {
+                var curName = explorerPathSplitted[i];
+                strHtmlExplorerPath += '<span class="explorer-path-link" onclick="handleExplorerShowFolderBySplitIndex(' + i + ')">' + curName + '</span>';
+                if (i !== explorerPathSplitted.length - 1) { strHtmlExplorerPath += '<span class="explorer-path-seperator">' + '/' + '</span>'; }
+            }
+            var strHtml = ''
+                + '<div id="container-explorer-expanded">'
+                + '  <div id="container-explorer-path">'
+                + '    <span style="float:left;">'
+                + '      <span class="explorer-path">' + strHtmlExplorerPath + '</span>'
+                + '      <span class="explorer-path-btn" onclick="handleExplorerLoadFolder()">Einlesen</span>'
+                + '      <span class="explorer-path-btn" onclick="openWindowsExplorer(stateExplorer.path)">Explorer</span>'
+                + '    </span>'
+                + '    <span style="float:right;">'
+                + '      <span class="explorer-path-btn" onclick="toggleExplorerCollapse()">&#9650;</span>' // &#9660;
+                + '    </span>'
+                + '  </div>'
+                + '  <div id="container-explorer-items">'
+                + '    <div class="explorer-item" onclick="handleExplorerShowParent()">...</div>';
+            for (var i = 0; i < stateExplorer.subfolders.length; i++) {
+                var curSubfolderName = stateExplorer.subfolders[i];
+                strHtml += '<div class="explorer-item" onclick="handleExplorerShowFolderByName(' + i + ')">' + curSubfolderName + '</div>';
+            }
+            strHtml += ''
+                + '  </div>'
+                + '</div>';
+            return strHtml;
+        }
+
+        function getHtmlOptions() {
+            var arrOptions = stateOptions.options;
+            var arrOrder = stateOptions.order;
+
+            var strHtml = '<div>';
+            for (var i = 0; i < arrOrder.length; i++) {
+                var curOrderPos = arrOrder[i];
+                strHtml += ''
+                    + '<div>'
+                    + '  <span style="margin-right: 5px; width: 32px;">'
+                    + '    <button type="button" class="btn-optionssort" id="btn-optionssort-up-' + i + '" onclick="handleOptionsSort(' + i + ', -1)"' + ((i === 0) ? ' disabled' : '') + '>&#8639;</button>'
+                    + '    <button type="button" class="btn-optionssort" id="btn-optionssort-down-' + i + '" onclick="handleOptionsSort(' + i + ', 1)"' + ((i === arrOrder.length - 1) ? ' disabled' : '') + '>&#8642;</button>'
+                    + '  </span>';
+                if (curOrderPos === 'replace') {
+                    strHtml += ''
+                        + '<label for="input-replace-searchtxt">Ersetzen von</label>'
+                        + '<input type="text" id="input-replace-searchtxt" value="' + arrOptions.replace.searchtxt + '">'
+                        + '<label for="input-replace-replacetxt">mit</label>'
+                        + '<input type="text" id="input-replace-replacetxt" value="' + arrOptions.replace.replacetxt + '">'
+                        + '<label class="label-checkbox" for="checkbox-replace-firstonly">(nur den ersten Treffer im Namen ersetzen</label>'
+                        + '<input type="checkbox" class="checkbox" id="checkbox-replace-firstonly"' + ((arrOptions.replace.firstonly) ? ' checked' : '') + '>'
+                        + '<label class="label-checkbox" for="checkbox-replace-allowregex">, Regex zulassen</label>'
+                        + '<input type="checkbox" class="checkbox" id="checkbox-replace-allowregex"' + ((arrOptions.replace.allowregex) ? ' checked' : '') + '>'
+                        + '<label class="label-checkbox" for="checkbox-replace-allowregex">)</label>'
+                        ;
+                }
+                else if (curOrderPos === 'sliceafter') {
+                    strHtml += ''
+                        + '<label for="input-sliceafter">Alles hinter dem Zeichen an Stelle</label>'
+                        + '<input type="text" class="input-number" id="input-sliceafter" value="' + (arrOptions.sliceafter.value || '') + '">'
+                        + '<label for="input-sliceafter">entfernen (negative Werte z&auml;hlen r&uuml;ckw&auml;rts und beginnen hinten)</label>'
+                        ;
+                }
+                else if (curOrderPos === 'slicebefore') {
+                    strHtml += ''
+                        + '<label for="input-slicebefore">Alles bis einschlie&szlig;lich des Zeichens an Stelle</label>'
+                        + '<input type="text" class="input-number" id="input-slicebefore" value="' + (arrOptions.slicebefore.value || '') + '">'
+                        + '<label for="input-slicebefore">entfernen (negative Werte z&auml;hlen r&uuml;ckw&auml;rts und beginnen hinten)</label>'
+                        ;
+                }
+                else if (curOrderPos === 'casing') {
+                    strHtml += ''
+                        + '<label for="select-casing-target">Alle</label>'
+                        + '<select id="select-casing-target">'
+                        + '  <option value=""' + ((!arrOptions.casing.target) ? ' selected' : '') + '></option>'
+                        + '  <option value="word"' + ((arrOptions.casing.target === 'word') ? ' selected' : '') + '>ersten Buchstaben je Wort</option>'
+                        + '  <option value="text"' + ((arrOptions.casing.target === 'text') ? ' selected' : '') + '>Buchstaben im Text</option>'
+                        + '</select>'
+                        + '<label for="select-casing-type">umwandeln in</label>'
+                        + '<select id="select-casing-type">'
+                        + '  <option value=""' + ((!arrOptions.casing.type) ? ' selected' : '') + '></option>'
+                        + '  <option value="upper"' + ((arrOptions.casing.type === 'upper') ? ' selected' : '') + '>Gro&szlig;buchstaben</option>'
+                        + '  <option value="lower"' + ((arrOptions.casing.type === 'lower') ? ' selected' : '') + '>Kleinbuchstaben</option>'
+                        + '</select>'
+                        ;
+                }
+                else if (curOrderPos === 'firstnumberdigits') {
+                    strHtml += ''
+                        + '<label for="input-firstnumberdigits">Die erste Zahl im Namen, wenn n&ouml;tig, mit f&uuml;hrenden Nullen auff&uuml;llen, bis sie aus</label>'
+                        + '<input type="text" class="input-number" id="input-firstnumberdigits" value="' + (arrOptions.firstnumberdigits.value || '') + '">'
+                        + '<label for="input-firstnumberdigits">Ziffern besteht</label>'
+                        ;
+                }
+                else if (curOrderPos === 'prefixandsuffix') {
+                    strHtml += ''
+                        + '<label for="input-prefix">Pr&auml;fix</label>'
+                        + '<input type="text" id="input-prefix" value="' + arrOptions.prefixandsuffix.prefix + '">'
+                        + '<label for="input-suffix">Suffix</label>'
+                        + '<input type="text" id="input-suffix" value="' + arrOptions.prefixandsuffix.suffix + '">'
+                        ;
+                }
+                else if (curOrderPos === 'date') {
+                    strHtml += ''
+                        + '<label for="select-date-type">Datum der</label>'
+                        + '<select id="select-date-type">'
+                        + '  <option value=""' + ((!arrOptions.date.type) ? ' selected' : '') + '></option>'
+                        + '  <option value="dateCreated"' + ((arrOptions.date.type === 'dateCreated') ? ' selected' : '') + '>Erstellung</option>'
+                        + '  <option value="dateLastModified"' + ((arrOptions.date.type === 'dateLastModified') ? ' selected' : '') + '>letzten &Auml;nderung</option>'
+                        + '</select>'
+                        + '<label for="select-date-format">im Format</label>'
+                        + '<select id="select-date-format">'
+                        + '  <option value=""' + ((!arrOptions.date.format) ? ' selected' : '') + '></option>'
+                        + '  <option value="yyyymmdd"' + ((arrOptions.date.format === 'yyyymmdd') ? ' selected' : '') + '>JJJJMMDD</option>'
+                        + '  <option value="yymmdd"' + ((arrOptions.date.format === 'yymmdd') ? ' selected' : '') + '>JJMMDD</option>'
+                        + '  <option value="yyyymm"' + ((arrOptions.date.format === 'yyyymm') ? ' selected' : '') + '>JJJJMM</option>'
+                        + '  <option value="yymm"' + ((arrOptions.date.format === 'yymm') ? ' selected' : '') + '>JJMM</option>'
+                        + '  <option value="yymmddhhmmss"' + ((arrOptions.date.format === 'yymmddhhmmss') ? ' selected' : '') + '>JJMMDDHHMMSS</option>'
+                        + '  <option value="yymmddhhmm"' + ((arrOptions.date.format === 'yymmddhhmm') ? ' selected' : '') + '>JJMMDDHHMM</option>'
+                        + '  <option value="yymmddhh"' + ((arrOptions.date.format === 'yymmddhh') ? ' selected' : '') + '>JJMMDDHH</option>'
+                        + '</select>'
+                        + '<label for="input-date-formatdelimiter">mit Trennzeichen</label>'
+                        + '<input type="text" class="input-char" id="input-date-formatdelimiter" value="' + arrOptions.date.formatdelimiter + '">'
+                        + '<select id="select-date-position">'
+                        + '  <option value=""' + ((!arrOptions.date.position) ? ' selected' : '') + '></option>'
+                        + '  <option value="start"' + ((arrOptions.date.position === 'start') ? ' selected' : '') + '>vorschieben</option>'
+                        + '  <option value="end"' + ((arrOptions.date.position === 'end') ? ' selected' : '') + '>anh&auml;ngen</option>'
+                        + '</select>'
+                        + '<label for="input-date-delimiter">abgetrennt durch</label>'
+                        + '<input type="text" class="input-char" id="input-date-delimiter" value="' + arrOptions.date.delimiter + '">'
+                        ;
+                }
+                else if (curOrderPos === 'foldername') {
+                    strHtml += ''
+                        + '<label for="input-foldername-stop">Den Namen des Ordners &uuml;bernehmen bis zum ersten Vorkommen von</label>'
+                        + '<input type="text" class="input-number" id="input-foldername-stop" value="' + arrOptions.foldername.stop + '">'
+                        + '<label for="select-foldername-position">und</label>'
+                        + '<select id="select-foldername-position">'
+                        + '  <option value=""' + ((!arrOptions.foldername.position) ? ' selected' : '') + '></option>'
+                        + '  <option value="start"' + ((arrOptions.foldername.position === 'start') ? ' selected' : '') + '>vorschieben</option>'
+                        + '  <option value="end"' + ((arrOptions.foldername.position === 'end') ? ' selected' : '') + '>anh&auml;ngen</option>'
+                        + '</select>'
+                        + '<label for="input-foldername-delimiter">abgetrennt durch</label>'
+                        + '<input type="text" class="input-char" id="input-foldername-delimiter" value="' + arrOptions.foldername.delimiter + '">'
+                        ;
+                }
+                else if (curOrderPos === 'numbering') {
+                    strHtml += ''
+                        + '<label for="input-numbering-start">Nummerierung beginnend mit</label>'
+                        + '<input type="text" class="input-number" id="input-numbering-start" value="' + arrOptions.numbering.start + '">'
+                        + '<label for="select-numbering-sorter">unter Sortierung der Dateien nach</label>'
+                        + '<select id="select-numbering-sorter">'
+                        + '  <option value=""' + ((!arrOptions.numbering.sorter) ? ' selected' : '') + '></option>'
+                        + '  <option value="name_asc"' + ((arrOptions.numbering.sorter === 'name_asc') ? ' selected' : '') + '>Name (alphanum.)&#11165;</option>'
+                        + '  <option value="name_desc"' + ((arrOptions.numbering.sorter === 'name_desc') ? ' selected' : '') + '>Name (alphanum.)&#11167;</option>'
+                        + '  <option value="namePlus_asc"' + ((arrOptions.numbering.sorter === 'namePlus_asc') ? ' selected' : '') + '>Name (alphanum.+)&#11165;</option>'
+                        + '  <option value="namePlus_desc"' + ((arrOptions.numbering.sorter === 'namePlus_desc') ? ' selected' : '') + '>Name (alphanum.+)&#11167;</option>'
+                        + '  <option value="size_asc"' + ((arrOptions.numbering.sorter === 'size_asc') ? ' selected' : '') + '>Gr&ouml;&szlig;e&#11165;</option>'
+                        + '  <option value="size_desc"' + ((arrOptions.numbering.sorter === 'size_desc') ? ' selected' : '') + '>Gr&ouml;&szlig;e&#11167;</option>'
+                        + '  <option value="dateCreated_asc"' + ((arrOptions.numbering.sorter === 'dateCreated_asc') ? ' selected' : '') + '>Erstelldatum&#11165;</option>'
+                        + '  <option value="dateCreated_desc"' + ((arrOptions.numbering.sorter === 'dateCreated_desc') ? ' selected' : '') + '>Erstelldatum&#11167;</option>'
+                        + '  <option value="dateLastModified_asc"' + ((arrOptions.numbering.sorter === 'dateLastModified_asc') ? ' selected' : '') + '>&Auml;nderungsdatum&#11165;</option>'
+                        + '  <option value="dateLastModified_desc"' + ((arrOptions.numbering.sorter === 'dateLastModified_desc') ? ' selected' : '') + '>&Auml;nderungsdatum&#11167;</option>'
+                        + '  <option value="custom"' + ((arrOptions.numbering.sorter === 'custom') ? ' selected' : '') + '>Benutzerdefiniert</option>'
+                        + '</select>'
+                        + '<select id="select-numbering-position">'
+                        + '  <option value=""' + ((!arrOptions.numbering.position) ? ' selected' : '') + '></option>'
+                        + '  <option value="start"' + ((arrOptions.numbering.position === 'start') ? ' selected' : '') + '>vorschieben</option>'
+                        + '  <option value="end"' + ((arrOptions.numbering.position === 'end') ? ' selected' : '') + '>anh&auml;ngen</option>'
+                        + '</select>'
+                        + '<label for="input-numbering-delimiter">abgetrennt durch</label>'
+                        + '<input type="text" class="input-char" id="input-numbering-delimiter" value="' + arrOptions.numbering.delimiter + '">'
+                        + '<label class="label-checkbox" for="checkbox-numbering-selectiononly">(nur ausgew&auml;hlte Dateien</label>'
+                        + '<input type="checkbox" class="checkbox" id="checkbox-numbering-selectiononly"' + ((arrOptions.numbering.selectiononly) ? ' checked' : '') + '>'
+                        + '<label class="label-checkbox" for="checkbox-numbering-selectiononly">)</label>'
+                        ;
+                }
+                strHtml += '</div>';
+            }
+            strHtml += ''
+                + '<div>'
+                + '  <label class="label-checkbox" for="checkbox-keepextension">Dateierweiterungen beibehalten</label>'
+                + '  <input type="checkbox" class="checkbox" id="checkbox-keepextension" style="margin: 0px 0px 0px 3px;"' + ((arrOptions.keepextension.value) ? ' checked' : '') + '>'
+                + '</div>';
+            strHtml += '</div>';
+            return strHtml;
+        }
+
+        function getHtmlElements() {
+            var arrObjElements = stateFolder.elementsListed;
+            if (!arrObjElements) { return '<p class="txt-error">Kein Ordner eingelesen</p>'; }
+            if (arrObjElements.length === 0) { return '<p>Keine Elemente gefunden</p>'; }
+            var strHtml = ''
+                + '<table>'
+                + '  <thead>'
+                + '    <tr>'
+                + '      <th class="table-column-checkbox">'
+                + '        <input type="checkbox" id="cb-allelements" onclick="toggleAllElementsAreSelected()"' + (stateAllElementsAreSelected ? ' checked' : '') + '>'
+                + '      </th>'
+                + '      <th><span class="pointer" onclick="handleThElementSort(\'namePlus\')">Aktueller Name</span></th>'
+                + '      <th><span class="pointer" onclick="handleThElementSort(\'size\')">Gr&ouml;&szlig;e</span></th>'
+                + '      <th><span class="pointer" onclick="handleThElementSort(\'type\')">Typ</span></th>'
+                + '      <th><span class="pointer" onclick="handleThElementSort(\'dateCreated\')">Erstelldatum</span></th>'
+                + '      <th><span class="pointer" onclick="handleThElementSort(\'dateLastModified\')">&Auml;nderungsdatum</span></th>'
+                + '      <th><span class="pointer" onclick="handleThElementSort(\'name_new\')">Neuer Name</span></th>'
+                + '      <th></th>'
+                + '    </tr>'
+                + '  </thead>'
+                + '  <tbody>';
+            var countListing = 0;
+            var countSelection = 0;
+            var totalSizeInBytes = 0;
+            for (var i = 0; i < arrObjElements.length; i++) {
+                var curElement = arrObjElements[i];
+                countListing++;
+                var curHtmlId = 'cb-element-' + i;
+                if (curElement.isSelected) {
+                    countSelection++;
+                    totalSizeInBytes += (isNaN(curElement.size) ? 0 : curElement.size);
+                }
+                strHtml += ''
+                    + '<tr>'
+                    + '  <td class="td-checkbox">'
+                    + '    <input type="checkbox" id="' + curHtmlId + '" onclick="toggleElementIsSelected(' + i + ')"' + (curElement.isSelected ? ' checked' : '') + '>'
+                    + '  </td>'
+                    + '  <td><label for="' + curHtmlId + '">' + curElement.name + '</label></td>'
+                    + '  <td><label for="' + curHtmlId + '">' + ((curElement.size === -1) ? '(Kein Zugriff)' : ((curElement.size / 1024).toLocaleString() + ' KB')) + '</label></td>'
+                    // + '  <td><label for="' + curHtmlId + '">' + (curElement.size) + ' Byte' + '</label></td>'
+                    + '  <td><label for="' + curHtmlId + '">' + curElement.type + '</label></td>'
+                    + '  <td><label for="' + curHtmlId + '">' + (getDateStringGerman(new Date(curElement.dateCreated))) + '</label></td>'
+                    + '  <td><label for="' + curHtmlId + '">' + (getDateStringGerman(new Date(curElement.dateLastModified))) + '</label></td>'
+                    + '  <td class="td-new-name"><label for="' + curHtmlId + '">' + curElement.name_new.replace(/ /g, '&nbsp;') + '</label></td>'
+                    + ((document.getElementById('select-numbering-sorter').value !== 'custom') ? '' : (''
+                        + '  <td class="td-btns">'
+                        + '    <button type="button" class="btn-customsort" id="btn-customsort-up-' + i + '" onclick="handleCustomElementSort(' + i + ', -1)"' + ((i === 0) ? ' disabled' : '') + '>&#8639;</button>'
+                        + '    <button type="button" class="btn-customsort" id="btn-customsort-down-' + i + '" onclick="handleCustomElementSort(' + i + ', 1)"' + ((i === arrObjElements.length - 1) ? ' disabled' : '') + '>&#8642;</button>'
+                        + '  </td>'
+                    ))
+                    + '</tr>';
+            }
+            if (countListing === 0) { return '<p>Keine Treffer</p>'; }
+            strHtml += ''
+                + '  </tbody>'
+                + '  <tfoot>'
+                + '    <tr>'
+                + '      <td colspan="5">' + 'Ausgew&auml;hlt: ' + countSelection + ', Gr&ouml;&szlig;e: ' + (totalSizeInBytes / 1024).toLocaleString() + ' KB' + '</td>'
+                + '    </tr>'
+                + '  </tfoot>'
+                + '</table> ';
+            return strHtml;
+        }
+
+        function getDateStringGerman(date) {
+            var fullYear = '' + date.getFullYear(); // JJJJ
+            var month = ('0' + (date.getMonth() + 1)).slice(-2); // 0-11
+            var day = ('0' + date.getDate()).slice(-2); // 1-31
+            var hours = ('0' + date.getHours()).slice(-2); // 0-23
+            var minutes = ('0' + date.getMinutes()).slice(-2); // 0-59
+            var seconds = ('0' + date.getSeconds()).slice(-2); // 0-59
+
+            return day + '.' + month + '.' + fullYear.slice(-2) + ', ' + hours + ':' + minutes + ':' + seconds;
+        }
+
+        function updateLogFile(arrProcessedElements, folderPath, mode) {
+            if (!arrProcessedElements || arrProcessedElements.length === 0) { return; }
+            var strLogfile = getDateStringGerman(new Date()) + ' ' + ((mode === 'files') ? 'DATEIEN' : 'ORDNER') + ' ' + folderPath + '\n';
+            for (var i = 0; i < arrProcessedElements.length; i++) {
+                var curProcessedElement = arrProcessedElements[i];
+                var indent = '    ';
+                strLogfile += ((i > 0) ? (indent + '------\n') : '')
+                    + indent + 'name_old: ' + curProcessedElement.name_old + '\n'
+                    + indent + 'name_new: ' + curProcessedElement.name_new + '\n'
+                    + indent + 'path_old: ' + curProcessedElement.path_old + '\n'
+                    + indent + 'path_new: ' + curProcessedElement.path_new + '\n'
+                    + indent + 'isSuccessful: ' + curProcessedElement.isSuccessful + '\n'
+                    + indent + 'errorMsg: ' + curProcessedElement.errorMsg + '\n'
+                    ;
+            }
+            strLogfile += '--------------------------------------------------\n';
+            writeToTextFile('log.txt', strLogfile, true);
+        }
+
+
+        function showAlert(strText) { alert((cleanTextForPopup(strText))); }
+
+        function showInfo(strText) { showPopup(strText, 'EmRename', 0, 64); }
+        function showWarning(strText) { showPopup(strText, 'EmRename', 0, 48); }
+        function showError(strText) { showPopup(strText, 'EmRename', 0, 16); }
+
+        function showPopup(strText, strTitle, btnType, iconType) {
+            https://admhelp.microfocus.com/uft/en/all/VBScript/Content/html/f482c739-3cf9-4139-a6af-3bde299b8009.htm?Highlight=popup
+            // object.Popup(strText,[nSecondsToWait],[strTitle],[nType]) 
+
+            // Button-Type 0 --> OK
+            // Button-Type 1 --> OK and Cancel
+            // Button-Type 2 --> Abort, Retry, and Ignore
+            // Button-Type 3 --> Yes, No, and Cancel
+            // Button-Type 4 --> Yes and No
+            // Button-Type 5 --> Retry and Cancel
+
+            // Icon-Type 16 --> Stop Mark
+            // Icon-Type 32 --> Question Mark
+            // Icon-Type 48 --> Exclamation Mark
+            // Icon-Type 64 --> Information Mark
+            var shell = new ActiveXObject('WScript.Shell');
+            shell.Popup(cleanTextForPopup(strText), 0, cleanTextForPopup(strTitle), btnType + iconType);
+        }
+
+        function cleanTextForHtml(str) {
+            return str
+                .replace(/Ä/g, '&Auml;')
+                .replace(/ä/g, '&auml;')
+                .replace(/Ö/g, '&Ouml;')
+                .replace(/ö/g, '&ouml;')
+                .replace(/Ü/g, '&Uuml;')
+                .replace(/ü/g, '&uuml;')
+                .replace(/ß/g, '&szlig;')
+                ;
+        }
+        function cleanTextForPopup(str) {
+            return unescape(str
+                .replace(/Ä/g, '%C4')
+                .replace(/ä/g, '%E4')
+                .replace(/Ö/g, '%D6')
+                .replace(/ö/g, '%F6')
+                .replace(/Ü/g, '%DC')
+                .replace(/ü/g, '%FC')
+                .replace(/ß/g, '%DF')
+            );
+        }
+
+        function openWindowsExplorer(path) {
+            if (!path) { return; }
+            var shell = new ActiveXObject('WScript.Shell');
+            shell.Run('"' + path + '"');
+        }
+
+        function getArrObjDesktopMonitors() {
+            var arrObjDesktopMonitors = [];
+            var wmi = GetObject('winmgmts://./root/CIMv2');
+            var monitors = wmi.ExecQuery('SELECT * FROM Win32_DesktopMonitor');
+            for (var e = new Enumerator(monitors); !e.atEnd(); e.moveNext()) {
+                arrObjDesktopMonitors.push({
+                    screenWidth: e.item().ScreenWidth,
+                    screenHeight: e.item().ScreenHeight
+                    // name: e.item().Name,
+                    // description: e.item().Description,
+                    // deviceID: e.item().DeviceID
+                    // pixelsPerXLogicalInch: e.item().PixelsPerXLogicalInch,
+                    // pixelsPerYLogicalInch: e.item().PixelsPerYLogicalInch
+                });
+            }
+            return arrObjDesktopMonitors;
+        }
+
+        function getArrObjMonitorParams() {
+            var arrObjMonitorParams = [];
+            var wmi = GetObject('winmgmts://./root/wmi');
+            var monitorParams = wmi.ExecQuery('SELECT * FROM WmiMonitorBasicDisplayParams');
+            for (var e = new Enumerator(monitorParams); !e.atEnd(); e.moveNext()) {
+                arrObjMonitorParams.push({
+                    active: e.item().Active,
+                    displayTransferCharacteristic: e.item().DisplayTransferCharacteristic,
+                    instanceName: e.item().InstanceName,
+                    maxHorizontalImageSize: e.item().MaxHorizontalImageSize,
+                    maxVerticalImageSize: e.item().MaxVerticalImageSize,
+                    videoInputType: e.item().VideoInputType,
+
+                    SDF_activeOffSupported: e.item().SupportedDisplayFeatures.ActiveOffSupported,
+                    SDF_displayType: e.item().SupportedDisplayFeatures.DisplayType,
+                    SDF_gTFSupported: e.item().SupportedDisplayFeatures.GTFSupported,
+                    SDF_hasPreferredTimingMode: e.item().SupportedDisplayFeatures.HasPreferredTimingMode,
+                    SDF_sRGBSupported: e.item().SupportedDisplayFeatures.SRGBSupported,
+                    SDF_standbySupported: e.item().SupportedDisplayFeatures.StandbySupported,
+                    SDF_suspendSupported: e.item().SupportedDisplayFeatures.SuspendSupported
+                });
+            }
+
+            for (var i = 0; i < arrObjMonitorParams.length; i++) {
+                var curObj = arrObjMonitorParams[i];
+                var strAlert = ''
+                for (var key in curObj) { strAlert += key + ': ' + curObj[key] + '\n'; }
+                alert(strAlert)
+            }
+
+            return arrObjMonitorParams;
+        }
+    </script>
+</body>
+
+</html>

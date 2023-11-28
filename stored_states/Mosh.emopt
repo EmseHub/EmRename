@@ -1,0 +1,64 @@
+{
+    "options": {
+        "replace": {
+            "searchtxt": "\\d...",
+            "replacetxt": "",
+            "firstonly": false,
+            "allowregex": true
+        },
+        "sliceafter": {
+            "value": null
+        },
+        "slicebefore": {
+            "value": null
+        },
+        "casing": {
+            "target": "",
+            "type": ""
+        },
+        "firstnumberdigits": {
+            "value": 2
+        },
+        "prefixandsuffix": {
+            "prefix": "",
+            "suffix": ""
+        },
+        "date": {
+            "type": "",
+            "format": "",
+            "formatdelimiter": "",
+            "position": "",
+            "delimiter": ""
+        },
+        "foldername": {
+            "stop": " ",
+            "position": "start",
+            "delimiter": "-"
+        },
+        "numbering": {
+            "start": "01",
+            "sorter": "name_asc",
+            "position": "start",
+            "delimiter": " - ",
+            "selectiononly": true,
+            "startInt": 1,
+            "sortName": "name",
+            "sortOrder": 1,
+            "formularIsValid": "start"
+        },
+        "keepextension": {
+            "value": true
+        }
+    },
+    "order": [
+        "firstnumberdigits",
+        "replace",
+        "sliceafter",
+        "slicebefore",
+        "casing",
+        "prefixandsuffix",
+        "date",
+        "numbering",
+        "foldername"
+    ]
+}

@@ -1,0 +1,80 @@
+<html>
+
+<head>
+    <title>Zustand speichern</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style type="text/css">
+        #modal-container {
+            padding: 15px;
+            width: 100%;
+            height: 100%;
+        }
+
+        td {
+            font-size: 10pt;
+            vertical-align: baseline;
+
+        }
+
+        input {
+            padding: 1px 4px;
+            width: 250px;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+    </style>
+
+
+    <script type="text/javascript">
+        window.onload = function () {
+            // var dialogArguments = window.dialogArguments;
+            document.getElementById('input-name').focus();
+        }
+
+        function handleKeyupInput(event) {
+            if (event.keyCode === 13) { handleSave(); }
+        }
+        function handleSave() {
+            if (window.showModalDialog) {
+                window.returnValue = (document.getElementById('input-name').value || '');
+            }
+            window.close();
+        }
+
+        function handleCancel() {
+            if (window.showModalDialog) {
+                window.returnValue = null;
+            }
+            window.close();
+        }
+    </script>
+</head>
+
+<body>
+    <div id="modal-container">
+        <table style="width: 100%; height: 100%;">
+            <tr style="height: 100%;">
+                <td>
+                    <label style="width: 130px;" for="input-name">Name des Zustands:</label>
+                </td>
+                <td style="width: 100%;">
+                    <input type="text" id="input-name" style="width:100%" onkeyup="handleKeyupInput(event)">
+                </td>
+                <td>
+                    <label style="width: 45px; text-align: right;" for="input-name">.emopt</label>
+                </td>
+            </tr>
+
+            <tr style="margin-top: 10px;">
+                <td colspan="3" style="text-align:right;">
+                    <button type="button" onclick="handleSave()">Speichern</button>
+                    <button type="button" style="margin-left: 5px;" onclick="handleCancel()">Abbrechen</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,481 @@
+body {
+    font-size: 10pt;
+    font-family: "Segoe UI", Calibri, Arial, Sans-Serif;
+    background-color: #121212;
+    /* background-color: #212121; */
+    color: #ffffff;
+    padding: 15px;
+
+    /* background-color: #000000; */
+    /* color: #121212; */
+    overflow: auto;
+}
+
+table {
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    border: 0px;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 0px;
+    margin: 0px;
+    border: 0px;
+    border-collapse: collapse;
+}
+
+hr {
+    margin: 0px 0px;
+    color: #424242;
+}
+
+a {
+    color: #36df77;
+}
+
+h1 {
+    font-size: 14pt;
+    display: inline;
+}
+
+button {
+    display: inline;
+    cursor: pointer;
+    background-color: #2e2e2e;
+    border-color: #121212;
+    color: 36df77;
+    /* border-color: #212121;
+    border: 1px solid #212121; */
+    height: 35px;
+    height: 38px;
+    margin: 0px;
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.label-checkbox {
+    display: inline;
+    margin: 0px;
+}
+
+input, select {
+    vertical-align: middle;
+    color: black;
+    /* color: #0d5428; */
+
+    /* background-color: #000000;
+    color: #fff; */
+
+    /* border: solid 1px #2f2f2f; */
+    /* border-right: solid 2px #2f2f2f;
+    border-bottom: solid 2px #2f2f2f; */
+}
+
+/* .checkbox {
+    border: 0px;
+    background: none;
+} */
+
+/* --------------------------Mode-------------------------- */
+#container-mode .radio {
+    display: inline;
+    /* height: 20px; */
+    width: 10px;
+    margin: 0px 2px 0px 10px;
+    padding: 0px;
+    vertical-align: middle;
+    font-size: 8pt;
+    /* background-color: red; */
+}
+
+#container-mode .label-radio {
+    display: inline;
+    /* height: 20px; */
+    margin: 0px;
+    padding: 0px;
+    vertical-align: middle;
+    font-size: 8pt;
+    /* background-color: #03dac6; */
+}
+
+/* --------------------------Folder-------------------------- */
+#container-folderpath {
+    /* background-color: #444444; */
+    margin-bottom: 5px;
+    margin-top: 30px;
+}
+
+#container-folderpath label {
+    font-size: 10pt;
+    display: block;
+    margin-bottom: 5px;
+}
+
+#container-folderpath input {
+    height: 20pt;
+    font-size: 10pt;
+    padding: 4px 6px 3px 6px;
+    width: 100%;
+    border-right: 0px;
+}
+
+#container-folderpath button {
+    /* height: 28px; */
+    height: 31px;
+    margin: 0;
+    border-left: 0px;
+}
+
+/* --------------------------Explorer-------------------------- */
+#container-explorer {
+    /* background-color: #36df77; */
+    color: #36df77;
+    border: 2px solid #121212;
+    /* padding: 12px 14px; */
+    padding: 0;
+    font-size: 8pt;
+    /* height: 100%; */
+    /* overflow: auto; */
+}
+
+#container-explorer #container-explorer-expanded {
+    background-color: none;
+    padding: 11px 15px 14px 15px;
+}
+
+#container-explorer #container-explorer-collapsed {
+    background-color: #121212;
+    display: block;
+    height: 23px;
+    line-height: 23px;
+    clear: both;
+    padding: 11px 15px;
+}
+
+#container-explorer #container-explorer-path {
+    display: block;
+    height: 23px;
+    line-height: 23px;
+    clear: both;
+    margin: 0;
+    padding: 0;
+    /* color: #f0f0f0; */
+}
+
+#container-explorer .explorer-path {
+    font-weight: bold;
+    vertical-align: baseline;
+    padding: 2px 0;
+}
+
+#container-explorer .explorer-path-link {
+    cursor: pointer;
+}
+
+#container-explorer .explorer-path-seperator {
+    font-weight: normal;
+    margin: 0 1px;
+}
+
+#container-explorer .explorer-path-btn {
+    cursor: pointer;
+    background-color: #2e2e2e;
+    color: #36df77;
+    margin: 0 0 0 3px;
+    padding: 3px 6px;
+    border: 1px inset #121212;
+    vertical-align: baseline;
+    font-size: 7pt;
+    font-weight: bold;
+}
+
+#container-explorer #container-explorer-items {
+    border: 2px solid #0d5428;
+    border-top: 0;
+    border-bottom: 0;
+    border-right: 0;
+    padding: 5px;
+    /* margin: 2px 0 0 0; */
+    height: 100px;
+    overflow-y: auto;
+}
+
+#container-explorer .explorer-item {
+    cursor: pointer;
+    border: 1px solid #0d5428;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    padding: 1px 0px;
+}
+
+/* --------------------------Options-------------------------- */
+#container-options {
+    /* background-color: #444444; */
+}
+
+#container-options div {
+    margin: 5px 0px;
+    /* vertical-align: middle; */
+}
+
+#container-options label {
+    font-size: 10pt;
+    vertical-align: middle;
+    height: 22px;
+    line-height: 22px;
+    padding: 0px 0px;
+}
+
+#container-options input, #container-options select {
+    font-size: 10pt;
+    margin: 0px 8px;
+    vertical-align: middle;
+}
+
+#container-options input {
+    padding: 1px 4px;
+    width: 250px;
+}
+
+#container-options .input-number {
+    width: 50px;
+}
+
+#container-options .input-char {
+    width: 20px;
+}
+
+#container-options .checkbox {
+    width: 15px;
+    margin: 0px 3px 0px 5px;
+}
+
+.btn-optionssort {
+    height: 20px;
+    width: 16px;
+    padding: 0;
+    margin: 0;
+    border-width: 1px;
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 17px;
+    /* visibility: hidden; */
+}
+
+#container-optionbtns button {
+    margin: 0;
+    height: 31px;
+    width: 120px;
+}
+
+#container-optionbtns button.btn-symbol {
+    display: inline;
+    font-size: 10pt;
+    margin: 6px 0;
+    width: 40px;
+    width: 57px;
+}
+
+/* --------------------------Namefilter-------------------------- */
+#container-namefilter {
+    margin: 0px 0;
+}
+
+#container-namefilter label {
+    font-size: 10pt;
+    vertical-align: middle;
+    height: 22px;
+    line-height: 22px;
+    padding: 0px 0px;
+}
+
+#container-namefilter input {
+    font-size: 10pt;
+    margin: 0px 4px;
+    vertical-align: middle;
+}
+
+#container-namefilter input {
+    padding: 1px 4px;
+    width: 250px;
+}
+
+/* --------------------------Elements-------------------------- */
+#container-elements {
+    /* background-color: #444444; */
+    overflow: auto;
+    height: 100%;
+}
+
+#container-elements p {
+    font-size: 12pt;
+    color: #36df77;
+    margin-top: 5px;
+    /* text-align: center; */
+}
+
+#container-elements table {
+    /* width: 100%; */
+    white-space: pre;
+}
+
+#container-elements th, #container-elements td {
+    text-align: left;
+}
+
+#container-elements th {
+    border-collapse: collapse;
+    padding: 0px;
+    padding-bottom: 10px;
+    font-size: 12pt;
+    color: #36df77;
+}
+
+#container-elements td {
+    border-bottom: 1px solid #0d5428;
+    padding: 0px;
+    font-size: 10pt;
+    vertical-align: top;
+}
+
+#container-elements label {
+    margin: 0px;
+    padding: 0px;
+    font-size: 10pt;
+    cursor: pointer;
+    white-space: pre;
+    vertical-align: middle;
+}
+
+#container-elements tfoot {
+    color: #36df77;
+    line-height: 20pt;
+
+}
+
+#container-elements tfoot td {
+    font-size: 8pt;
+    border: 0px;
+}
+
+.td-new-name {
+    color: #36df77;
+}
+
+.td-checkbox {
+    width: 30px;
+    height: 20px;
+    vertical-align: top;
+}
+
+.td-checkbox input {
+    /* height: 19px; */
+    /* background-color: red; */
+}
+
+.table-column-checkbox input {
+    /* background-color: red;
+    margin: 0px;
+    padding: 0px; */
+}
+
+.td-btns {
+    /* background-color: red; */
+    text-align: right;
+    padding: 0px;
+    margin: 0px;
+    border-collapse: collapse;
+    border: 0px;
+    width: 33px;
+}
+
+.btn-customsort {
+    /* display: none; */
+    height: 20px;
+    width: 16px;
+    padding: 0;
+    margin: 0;
+    border-width: 1px;
+    font-size: 15px;
+    font-weight: bold;
+    line-height: 17px;
+}
+
+/* --------------------------Buttons-------------------------- */
+#container-btns {
+    clear: both;
+}
+
+#container-btns button {
+    margin: 5px 5px 0 0;
+}
+
+
+/* --------------------------Farben-------------------------- */
+.txt-primary {
+    color: #36df77;
+}
+
+.txt-secondary {
+    color: #0d5428;
+}
+
+.txt-success {
+    color: #03dac6;
+}
+
+.txt-error {
+    color: #cf6679;
+}
+
+.bg-primary {
+    background-color: #36df77;
+}
+
+.bg-secondary {
+    background-color: #0d5428;
+}
+
+.bg-success {
+    background-color: #03dac6;
+}
+
+.bg-error {
+    background-color: #cf6679;
+}
+
+.tr-colors {
+    color: #36df77;
+    color: #0d5428;
+    color: #d04242;
+    color: #5d1616;
+
+    /* Auf #2e2e2e */
+    color: #13d06a;
+    color: #209757;
+
+
+    color: #124128;
+
+    color: #121212;
+    color: #2e2e2e;
+
+    color: #434343;
+
+
+    color: #8e8e93;
+
+    color: #777879;
+
+
+    /* Weniger */
+    color: #242525;
+
+    /* MOTO */
+    color: #202020;
+}
