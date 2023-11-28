@@ -19,8 +19,6 @@
             margin-top: 10px;
         }
 
-        /* #namelist {} */
-
         #namelist div {
             cursor: pointer;
             margin: 8px 0;
@@ -37,10 +35,6 @@
         window.onload = function () {
             var arrStoredSateNames = window.dialogArguments;
             if (!arrStoredSateNames || arrStoredSateNames.length === 0) { return; }
-
-            // arrStoredSateNames = [
-            //     'Bla bla bla 01.emopt',
-            // ]
 
             var strHtmlNamelist = '';
             for (var i = 0; i < arrStoredSateNames.length; i++) {

@@ -2,12 +2,8 @@ body {
     font-size: 10pt;
     font-family: "Segoe UI", Calibri, Arial, Sans-Serif;
     background-color: #121212;
-    /* background-color: #212121; */
     color: #ffffff;
     padding: 15px;
-
-    /* background-color: #000000; */
-    /* color: #121212; */
     overflow: auto;
 }
 
@@ -46,8 +42,6 @@ button {
     background-color: #2e2e2e;
     border-color: #121212;
     color: 36df77;
-    /* border-color: #212121;
-    border: 1px solid #212121; */
     height: 35px;
     height: 38px;
     margin: 0px;
@@ -62,49 +56,32 @@ button {
     margin: 0px;
 }
 
-input, select {
+input,
+select {
     vertical-align: middle;
     color: black;
-    /* color: #0d5428; */
-
-    /* background-color: #000000;
-    color: #fff; */
-
-    /* border: solid 1px #2f2f2f; */
-    /* border-right: solid 2px #2f2f2f;
-    border-bottom: solid 2px #2f2f2f; */
 }
-
-/* .checkbox {
-    border: 0px;
-    background: none;
-} */
 
 /* --------------------------Mode-------------------------- */
 #container-mode .radio {
     display: inline;
-    /* height: 20px; */
     width: 10px;
     margin: 0px 2px 0px 10px;
     padding: 0px;
     vertical-align: middle;
     font-size: 8pt;
-    /* background-color: red; */
 }
 
 #container-mode .label-radio {
     display: inline;
-    /* height: 20px; */
     margin: 0px;
     padding: 0px;
     vertical-align: middle;
     font-size: 8pt;
-    /* background-color: #03dac6; */
 }
 
 /* --------------------------Folder-------------------------- */
 #container-folderpath {
-    /* background-color: #444444; */
     margin-bottom: 5px;
     margin-top: 30px;
 }
@@ -124,7 +101,6 @@ input, select {
 }
 
 #container-folderpath button {
-    /* height: 28px; */
     height: 31px;
     margin: 0;
     border-left: 0px;
@@ -132,14 +108,10 @@ input, select {
 
 /* --------------------------Explorer-------------------------- */
 #container-explorer {
-    /* background-color: #36df77; */
     color: #36df77;
     border: 2px solid #121212;
-    /* padding: 12px 14px; */
     padding: 0;
     font-size: 8pt;
-    /* height: 100%; */
-    /* overflow: auto; */
 }
 
 #container-explorer #container-explorer-expanded {
@@ -163,7 +135,6 @@ input, select {
     clear: both;
     margin: 0;
     padding: 0;
-    /* color: #f0f0f0; */
 }
 
 #container-explorer .explorer-path {
@@ -199,7 +170,6 @@ input, select {
     border-bottom: 0;
     border-right: 0;
     padding: 5px;
-    /* margin: 2px 0 0 0; */
     height: 100px;
     overflow-y: auto;
 }
@@ -214,13 +184,10 @@ input, select {
 }
 
 /* --------------------------Options-------------------------- */
-#container-options {
-    /* background-color: #444444; */
-}
+#container-options {}
 
 #container-options div {
     margin: 5px 0px;
-    /* vertical-align: middle; */
 }
 
 #container-options label {
@@ -231,7 +198,8 @@ input, select {
     padding: 0px 0px;
 }
 
-#container-options input, #container-options select {
+#container-options input,
+#container-options select {
     font-size: 10pt;
     margin: 0px 8px;
     vertical-align: middle;
@@ -264,7 +232,6 @@ input, select {
     font-size: 15px;
     font-weight: bold;
     line-height: 17px;
-    /* visibility: hidden; */
 }
 
 #container-optionbtns button {
@@ -307,7 +274,6 @@ input, select {
 
 /* --------------------------Elements-------------------------- */
 #container-elements {
-    /* background-color: #444444; */
     overflow: auto;
     height: 100%;
 }
@@ -316,15 +282,14 @@ input, select {
     font-size: 12pt;
     color: #36df77;
     margin-top: 5px;
-    /* text-align: center; */
 }
 
 #container-elements table {
-    /* width: 100%; */
     white-space: pre;
 }
 
-#container-elements th, #container-elements td {
+#container-elements th,
+#container-elements td {
     text-align: left;
 }
 
@@ -373,19 +338,7 @@ input, select {
     vertical-align: top;
 }
 
-.td-checkbox input {
-    /* height: 19px; */
-    /* background-color: red; */
-}
-
-.table-column-checkbox input {
-    /* background-color: red;
-    margin: 0px;
-    padding: 0px; */
-}
-
 .td-btns {
-    /* background-color: red; */
     text-align: right;
     padding: 0px;
     margin: 0px;
@@ -395,7 +348,6 @@ input, select {
 }
 
 .btn-customsort {
-    /* display: none; */
     height: 20px;
     width: 16px;
     padding: 0;
@@ -447,35 +399,4 @@ input, select {
 
 .bg-error {
     background-color: #cf6679;
-}
-
-.tr-colors {
-    color: #36df77;
-    color: #0d5428;
-    color: #d04242;
-    color: #5d1616;
-
-    /* Auf #2e2e2e */
-    color: #13d06a;
-    color: #209757;
-
-
-    color: #124128;
-
-    color: #121212;
-    color: #2e2e2e;
-
-    color: #434343;
-
-
-    color: #8e8e93;
-
-    color: #777879;
-
-
-    /* Weniger */
-    color: #242525;
-
-    /* MOTO */
-    color: #202020;
 }

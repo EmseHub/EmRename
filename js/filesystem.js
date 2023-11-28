@@ -6,7 +6,6 @@ function checkIfFileExists(filePath) {
         if (fileSystemObject.FileExists(absolutePath)) { return true; }
     }
     catch (error) { showAlert(error.message); }
-    // showAlert('Folgende Datei existiert nicht: \n' + filePath);
     return false;
 }
 
@@ -18,19 +17,13 @@ function checkIfFolderExists(folderPath) {
         if (fileSystemObject.FolderExists(absolutePath)) { return true; }
     }
     catch (error) { showAlert(error.message); }
-    // showAlert('Folgender Ordner existiert nicht: \n' + folderPath);
     return false;
 }
 
 
 
 function createFolder(parentfolderPath, folderName) {
-
-    // createFolder('/', 'newtmpx');
-    // createFolder('test', 'newtmp');
-    // Bei '/test' wird in C:\test erstellt, bei 'test' wird im Ordner 'test' der Anwendung erstellt
-
-    if (!folderName) { return false; }
+     if (!folderName) { return false; }
 
     var fullpath = folderName;
 
@@ -76,11 +69,9 @@ function renameElement(elementPath, newName, mode) {
         objRenaming.path_old = getCleanPath(objElement.Path + '');
         objRenaming.name_old = objElement.Name;
 
-        // objRenaming.pathNew = getCleanPath(fileOrFolder.ParentFolder + '') + '/' + objRenaming.nameNew;
         objRenaming.path_new = getCleanPath(fileSystemObject.BuildPath(objElement.ParentFolder, objRenaming.name_new));
 
         if (objRenaming.path_new === objRenaming.path_old) { objRenaming.errorMsg = 'Neuer Name entspricht dem alten.'; return objRenaming; }
-        // Aaa.txt --> aaa.txt ist möglich!
 
         (mode === 'files')
             ? fileSystemObject.MoveFile(objRenaming.path_old, objRenaming.path_new)
@@ -135,8 +126,6 @@ function getObjFilesInFolder(folderPath) {
             dateCreated: enumFiles.item().DateCreated,
             dateLastModified: enumFiles.item().DateLastModified
         });
-        // alert('Name: ' + enumFiles.item().Name + '\nAttributes: ' + enumFiles.item().Attributes + '\n\n' + detectMeaningOfAttributes(enumFiles.item().Attributes));
-        // alert('enumFiles.item().Path' + ': ' + enumFiles.item().Path);
     }
     return { path: folderPath, elements: filesInFolder };
 }
@@ -152,8 +141,6 @@ function getObjSubfoldersInFolder(folderPath) {
     var subfoldersInFolder = [];
     var enumSubfolders = new Enumerator(folder.subFolders);
     for (; !enumSubfolders.atEnd(); enumSubfolders.moveNext()) {
-        // Bei Attributes 22 und 1046 darf keine Filesize ermittelt werden (insb. bei Systemfiles [4])
-        // Nur 16 oder 17 erlauben
         var curAttribute = enumSubfolders.item().Attributes;
         try {
             var objSubfolder = {
@@ -166,27 +153,14 @@ function getObjSubfoldersInFolder(folderPath) {
             }
             try { objSubfolder.size = enumSubfolders.item().Size; }
             catch (error) { objSubfolder.size = -1; }
-            // try { objSubfolder.filesCount = enumSubfolders.item().Files.Count; }
-            // catch (error) { objSubfolder.filesCount = error.message; }
             subfoldersInFolder.push(objSubfolder);
 
         } catch (errorAll) {
             showAlert('Fehler: ' + errorAll.message + '\n\n' + enumSubfolders.item().Path + '\n\n' + curAttribute + '\n\n' + detectMeaningOfAttributes(curAttribute))
         }
-        // alert(''
-        //     + 'path: ' + objSubfolder.path + '\n'
-        //     + 'name: ' + objSubfolder.name + '\n'
-        //     + 'type: ' + objSubfolder.type + '\n'
-        //     + 'dateCreated: ' + objSubfolder.dateCreated + '\n'
-        //     + 'dateLastModified: ' + objSubfolder.dateLastModified + '\n'
-        //     + 'size: ' + objSubfolder.size + '\n'
-        //     + 'filesCount: ' + objSubfolder.filesCount + '\n\n'
-        //     + 'attributes: ' + objSubfolder.attributes + '\n'
-        //     + '' + detectMeaningOfAttributes(objSubfolder.attributes) + '\n'
-        // );
     }
     return { path: folderPath, elements: subfoldersInFolder };
-    // Subfolders --> https://admhelp.microfocus.com/uft/en/all/VBScript/Content/html/1fddd555-caa0-4f77-851d-0a2d3082e13d.htm
+    // Subfolders https://admhelp.microfocus.com/uft/en/all/VBScript/Content/html/1fddd555-caa0-4f77-851d-0a2d3082e13d.htm
     // Folder http://www.java2s.com/Tutorial/JavaScript/0600__MS-JScript/Folder.htm
 }
 
@@ -203,10 +177,6 @@ function getArrAllNamesOfElementsInFolder(folderPath) {
     for (; !enumFiles.atEnd(); enumFiles.moveNext()) { arrAllNames.push(enumFiles.item().Name); }
     var enumSubfolders = new Enumerator(folder.subFolders);
     for (; !enumSubfolders.atEnd(); enumSubfolders.moveNext()) { arrAllNames.push(enumSubfolders.item().Name); }
-
-    // var strAllNames = arrAllNames.length + ' Elemente:\n\n';
-    // for (var i = 0; i < arrAllNames.length; i++) { strAllNames += arrAllNames[i] + '\n'; }
-    // alert(strAllNames);
 
     return arrAllNames;
 }
@@ -286,7 +256,6 @@ function readFromTextFile(strFilepath) {
         textFile.Close();
         return strContent;
     } catch (error) {
-        // showAlert('Fehler beim Einlesen der Textdatei "' + strFilepath + '":\n\n' + error.message);
         return '';
     }
 }

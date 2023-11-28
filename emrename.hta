@@ -1,8 +1,8 @@
 <html>
 
 <head>
-    <hta:application ApplicationName="EmRename" Id="EmRename" Version="1.0.6" Icon="img/emrename.ico" Border="Thick" BorderStyle="Normal" Caption="Yes" ContextMenu="Yes" MaximizeButton="Yes" MinimizeButton="Yes" Navigable="Yes" Scroll="Yes" Selection="Yes" ShowInTaskbar="Yes" SingleInstance="Yes"
-        SysMenu="Yes" WindowState="Normal">
+    <hta:application ApplicationName="EmRename" Id="EmRename" Version="1.0.6" Icon="img/emrename.ico" Border="Thick" BorderStyle="Normal" Caption="Yes" ContextMenu="Yes" MaximizeButton="Yes" MinimizeButton="Yes" Navigable="Yes" Scroll="Yes"
+        Selection="Yes" ShowInTaskbar="Yes" SingleInstance="Yes" SysMenu="Yes" WindowState="Normal">
         <title>EmRename</title>
         <link rel="stylesheet" href="css/style.css">
         <script language="JavaScript">
@@ -51,11 +51,8 @@
                 if (!heightStartup || heightStartup < 750 || heightStartup - 16 > heightAvailable) { heightStartup = 1020; }
                 window.resizeTo(widthStartup, heightStartup);
 
-                // var posXStartup = (objSettings.lastLeft < -300 || objSettings.lastLeft > widthAvailable - 200) ? 0 : objSettings.lastLeft;
-                // var posYStartup = (objSettings.lastTop < 31 || objSettings.lastTop > heightAvailable - 100) ? 0 : objSettings.lastTop - 31;
                 var posXStartup = (arrObjDesktopMonitors.length === 1 && (objSettings.lastLeft < -300 || objSettings.lastLeft > widthAvailable - 200)) ? 0 : objSettings.lastLeft;
                 var posYStartup = (arrObjDesktopMonitors.length === 1 && (objSettings.lastTop < 31 || objSettings.lastTop > heightAvailable - 100)) ? 0 : objSettings.lastTop - 31;
-                // moveTo(-8 , 0) ist erst wirklich am Rand
                 window.moveTo(posXStartup - 8, posYStartup);
 
 
@@ -89,7 +86,6 @@
             };
 
             window.onbeforeunload = function (event) {
-                // window.event.returnValue = false;  
                 var arrObjDesktopMonitors = getArrObjDesktopMonitors();
                 var objSettings = {
                     lastScreenWidthAvailable: screen.availWidth,
@@ -99,7 +95,6 @@
                     lastHeight: document.body.offsetHeight + 23,
                     lastLeft: window.screenLeft,
                     lastTop: window.screenTop,
-                    // Am linken Rand ist Left 2 und Top 33 (Fensterrahmen)
                     lastFolderpath: ((stateFolder) ? stateFolder.path : ''),
                     lastExplorerisExpanded: stateExplorer.isExpanded
                 };
@@ -212,18 +207,6 @@
                         <button type="button" style="margin-right: 0px;" onclick="handleClose()">Schlie&szlig;en</button>
                     </div>
                 </div>
-                <!-- <table>
-                    <tr>
-                        <td style="text-align: left;">
-                            <button id="btn-undo" type="button" style="margin-right: 5px;" disabled onclick="handleUndo()">Umbenennung r&uuml;ckg&auml;ngig machen</button>
-                        </td>
-                        <td style="text-align: right;">
-                            <button type="button" style="margin-right: 5px;" onclick="handleRename()">Auswahl umbenennen</button>
-                            <button id="btn-explorer" type="button" style="margin-right: 5px;" onclick="handleOpenInExplorer()" disabled>Im Exporer &ouml;ffnen</button>
-                            <button type="button" onclick="handleClose()">Schlie&szlig;en</button>
-                        </td>
-                    </tr>
-                </table> -->
             </td>
         </tr>
     </table>
@@ -264,15 +247,6 @@
         function handleOpenFolder() {
             var strFolderpath = document.getElementById('input-folderpath').value;
             if (!strFolderpath) {
-                // var input = document.createElement('input');
-                // input.type = 'file';         
-                // input.style.display = 'none';
-                // input.onchange = function () {
-                //     alert(input.value)
-                //     document.body.removeChild(input);
-                // };    
-                // document.body.appendChild(input);
-                // input.click();
                 var shell = new ActiveXObject('Shell.Application');
                 // https://learn.microsoft.com/de-de/windows/win32/api/shlobj_core/ns-shlobj_core-browseinfoa
                 // 0x00000200 --> Keine Schaltfläche Neuer Ordner im Dialogfeld
@@ -331,7 +305,7 @@
 
         function handleOptionsSort(rowIndex, direction) {
             var idToFocus = '';
-            if (direction === -1 && rowIndex > 0) { // Datei wird um 1 nach vorne geschoben bzw. Index verringert        
+            if (direction === -1 && rowIndex > 0) {
                 stateOptions.order.splice((rowIndex - 1), 0, (stateOptions.order.splice((rowIndex), 1)[0]));
                 idToFocus = 'btn-optionssort-up-' + (rowIndex - 1);
             }
@@ -490,7 +464,6 @@
             var idToFocus = '';
             if (direction === -1 && elementIndex > 0) { // Datei wird um 1 nach vorne geschoben bzw. Index verringert        
                 stateFolder.elementsListed.splice((elementIndex - 1), 0, (stateFolder.elementsListed.splice((elementIndex), 1)[0]));
-                // splice(indexStartInsertionOrDeletion, deleteCountStartingFromIndexStart, itemToAdd_1, ..., itemToAdd_X)
                 idToFocus = 'btn-customsort-up-' + (elementIndex - 1);
             }
             else if (direction === 1 && elementIndex < (stateFolder.elementsListed.length - 1)) {
@@ -518,8 +491,6 @@
                 + ' zum Rückgängigmachen in die aktuelle Ansicht geladen werden?\n\n'
                 + 'Achtung: Sobald Optionen gesetzt werden, wird der neue Name wieder angepasst. Der alte Stand kann jedoch erneut eingelesen werden.';
             if (confirm(cleanTextForPopup(strConfirmUndo)) === true) {
-                // setStateOptionsToDefault();
-                // loadOptionsToGUI();
                 var newElementsListed = [];
                 for (var i = 0; i < stateFolder.elementsTotal.length; i++) {
                     var curElement = stateFolder.elementsTotal[i];
@@ -726,15 +697,6 @@
             };
             var arrOrder = ['replace', 'sliceafter', 'slicebefore', 'casing', 'firstnumberdigits', 'prefixandsuffix', 'date', 'foldername', 'numbering'];
             stateOptions = { options: objOptions, order: arrOrder };
-            // var divOptions = document.getElementById('container-options');
-            // var arrInputNodes = divOptions.getElementsByTagName('input');
-            // for (var i = 0; i < arrInputNodes.length; i++) { if (arrInputNodes[i].type === 'text') { arrInputNodes[i].value = ''; } }
-            // var arrSelectNodes = divOptions.getElementsByTagName('select');
-            // for (var i = 0; i < arrSelectNodes.length; i++) { arrSelectNodes[i].value = ''; }
-            // document.getElementById('checkbox-replace-firstonly').checked = true;
-            // document.getElementById('checkbox-replace-allowregex').checked = false;
-            // document.getElementById('checkbox-numbering-selectiononly').checked = true;
-            // document.getElementById('checkbox-keepextension').checked = true;
         }
 
         function setStateOptionsFromInput() {
@@ -1218,11 +1180,6 @@
                 arrObjDesktopMonitors.push({
                     screenWidth: e.item().ScreenWidth,
                     screenHeight: e.item().ScreenHeight
-                    // name: e.item().Name,
-                    // description: e.item().Description,
-                    // deviceID: e.item().DeviceID
-                    // pixelsPerXLogicalInch: e.item().PixelsPerXLogicalInch,
-                    // pixelsPerYLogicalInch: e.item().PixelsPerYLogicalInch
                 });
             }
             return arrObjDesktopMonitors;

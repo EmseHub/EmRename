@@ -118,8 +118,6 @@ function getArrRenamedElements(arrElements, objOptions, arrOptionsOrder, mode) {
         var name_old_withoutExtension = (lastIndexOfPeriod === -1) ? name_old : name_old.substring(0, lastIndexOfPeriod);
         var extension = (lastIndexOfPeriod === -1) ? '' : name_old.substring(lastIndexOfPeriod);
 
-        // if (i === 0) { showAlert('name_old "' + name_old + '"\n' + 'name_old_withoutExtension "' + name_old_withoutExtension + '"\n' + 'extension "' + extension + '"\n'); }
-
         var name_new = (mode === 'files') ? name_old_withoutExtension : name_old;
         for (var y = 0; y < arrOptionsOrder.length; y++) {
             var curOption = arrOptionsOrder[y];
@@ -166,7 +164,7 @@ function getArrRenamedElements(arrElements, objOptions, arrOptionsOrder, mode) {
                 }
             }
         }
-        // ----- Immer Fix -----           
+        // ----- Immer fix -----           
         if (mode === 'files' && objOptions.keepextension.value && !name_new.toLowerCase().endsWith(extension.toLowerCase())) {
             name_new += extension;
         }
@@ -192,7 +190,7 @@ function sortElementArray(arrElements, sorter, order) {
     else if (sorter === 'type') { arrElements.sort(stringSorter('type', 'name', order)); }
     else if (sorter === 'dateCreated') { arrElements.sort(dateSorter('dateCreated', 'name', order)); }
     else if (sorter === 'dateLastModified') { arrElements.sort(dateSorter('dateLastModified', 'name', order)); }
-    else if (sorter === 'name_new') { arrElements.sort(stringSorter('name_new', 'size', order)); }    
+    else if (sorter === 'name_new') { arrElements.sort(stringSorter('name_new', 'size', order)); }
 }
 
 
@@ -200,7 +198,6 @@ function stringSorter(propPrimary, propSecondary, order) {
     return function (a, b) {
         var result = a[propPrimary].toString().localeCompare(b[propPrimary].toString(), undefined, { sensitivity: 'variant' });
         if (result === 0) {
-            // showAlert('"' + a[propPrimary] + '" und "' + a[propPrimary] + '" sind gleich');
             var a_secondary = a[propSecondary];
             var b_secondary = b[propSecondary];
             if (a_secondary < b_secondary) return -1;
@@ -278,9 +275,6 @@ function renameSelectedElements(arrElements, folderPath, mode) {
             while (nameIsInUse) {
                 nameIsInUse = false;
                 for (var z = 0; z < arrOtherExistingOrFutureNames.length; z++) {
-                    // Problem 
-                    // 01.txt wird wie gewollt zu temp_02.txt
-                    // 03.txt soll zu 02.txt werden, wird also erst zu temp_02.txt, da 02.txt noch vorhanden ist, Problem: temp_02.txt ist mittlerweile blockiert
                     if (arrOtherExistingOrFutureNames[z].toLowerCase() === tmpName.toLowerCase()) { // Eine Datei im Ordner, die umbenannt wird bzw. auch temp_... heißt, blockiert den neuen Namen
                         nameIsInUse = true;
                         tmpName = 'temp_' + tmpName;
@@ -289,11 +283,6 @@ function renameSelectedElements(arrElements, folderPath, mode) {
                 }
             }
             curElement.name_new_temp = (tmpName !== curElement.name_new) ? tmpName : null;
-            // showAlert(
-            //     + 'Namen, die andere Dateien jetzt oder zukünftig haben:\n' + arrOtherExistingOrFutureNames + '\n\n'
-            //     + 'name_new --> ' + curElement.name_new + '\n'
-            //     + 'name_new_temp --> : ' + curElement.name_new_temp + '\n'
-            // );
         }
     }
     // Dateien/Ordner umbenennen
@@ -331,14 +320,10 @@ function renameSelectedElements(arrElements, folderPath, mode) {
             name_old: objRenamingResult.name_old,
             name_new: curElement.name_new, // Wichtig, da möglicherweise nur temp_ benannt wurde
             name_new_temp: curElement.name_new_temp,
-            // size: curElement.size,
-            // type: curElement.type,
-            // attributes: curElement.attributes,
             isSuccessful: objRenamingResult.isSuccessful,
             errorMsg: objRenamingResult.errorMsg
         });
     }
-    // alert('PAUSE');
     for (var i = 0; i < arrProcessedElements.length; i++) {
         var curProcessedElement = arrProcessedElements[i];
         // temp_ bei erfolgreichen Umbenennungen entfernen, wenn Vorschub nötig war
@@ -388,7 +373,7 @@ function validateNames(arrElements, arrAllExistingNames, mode) {
         var stableName = arrAllExistingNames[i];
         var nameWillChange = false;
         for (var y = 0; y < arrElements.length; y++) {
-            // bestehende Datei im Ordner ist von geplanter Umbenennung betroffen, wenn
+            // bestehende Datei im Ordner ist von geplanter Umbenennung betroffen, wenn...
             if (
                 stableName.toLowerCase() === arrElements[y].name.toLowerCase() // Datei ist im Umbenennungs-Array vertreten
                 && arrElements[y].isSelected // Datei ist für Umbenennung ausgewählt

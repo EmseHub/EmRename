@@ -25,7 +25,6 @@ function createShortcuts(pinToDesktop, pinToStartmenu) {
     }
     if (pinToStartmenu) {
         var pathSartmenu = wshShell.SpecialFolders('StartMenu');
-        //  SpecialFolders('StartMenu') = %USERPROFILE%\AppData\Roaming\Microsoft\Windows\Start Menu
         var shortcutStartmenu = wshShell.CreateShortcut(pathSartmenu + '\\Programs\\' + filename + '.lnk');
         shortcutStartmenu.TargetPath = emrenameFilepath;
         shortcutStartmenu.WorkingDirectory = emrenameRootpath;

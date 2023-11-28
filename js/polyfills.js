@@ -13,7 +13,6 @@ if (!Array.prototype.indexOf) {
     }
 }
 
-
 // function checkIfArrObjsHasPropVal(arrObj, prop, val, caseSensitive) {
 //     if (!caseSensitive) { val = val.toLowerCase(); }
 //     for (var z = 0; z < arrObj.length; z++) {
